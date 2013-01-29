@@ -41,14 +41,24 @@ tests.forEach(function (test) {
   utils.dump(key);
   test[1].forEach(function (test) {
     var state = utils.fromhex(test[0]);
-    console.log("BEFORE");
+    console.log("GIVEN PLAIN TEXT");
     utils.dump(state);
     aes.encrypt(state, key);
-    console.log("AFTER");
+    console.log("CALCULATED ENCRYPTED TEXT");
     utils.dump(state);
     var output = utils.tohex(state);
     if (output !== test[1]) {
       throw new Error(output + " !== " + test[1]);
+    }
+    state = utils.fromhex(test[1]);
+    console.log("GIVEN ENCRYPTED TEXT");
+    utils.dump(state);
+    aes.decrypt(state, key);
+    console.log("CALCULATED PLAIN TEXT");
+    utils.dump(state);
+    var output = utils.tohex(state);
+    if (output !== test[0]) {
+      throw new Error(output + " !== " + test[0]);
     }
   });
 });
