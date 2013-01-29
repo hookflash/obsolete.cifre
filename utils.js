@@ -47,9 +47,23 @@ define('utils', function () {
     return string;
   }
 
+  // Convert a JS string into a UTF-8 encoded byte array.
+  function stringToBuffer(string) {
+    // Convert the unicode string to be the ASCII representation of
+    // the UTF-8 bytes.
+    string = unescape(encodeURIComponent(string));
+    var length = string.length;
+    var buf = new Uint8Array(length);
+    for (var i = 0; i < length; i++) {
+      buf[i] = string.charCodeAt(i);
+    }
+    return buf;
+  }
+
   return {
     dump: dump,
     tohex: tohex,
-    fromhex: fromhex
+    fromhex: fromhex,
+    stringToBuffer: stringToBuffer,
   };
 });

@@ -39,7 +39,7 @@ define('aes', function () {
   function keyExpansion(key) {
     var length = key.length;
     if (!(length === 16 || length === 24 || length === 32)) {
-      throw new TypeError("Only keylengths of 16, 24, and 32 are supported");
+      throw new TypeError("Only key lengths of 16, 24, and 32 are supported");
     }
     var size = length * 4 + 112;
     var state = new Uint8Array(size);
@@ -104,7 +104,7 @@ define('aes', function () {
     }
   }
 
-  // shift rows 0, 1, 2, and 3 columns left respectivly
+  // shift rows 0, 1, 2, and 3 columns left respectively
   function shiftRows(state) {
     var tmp = state[1];
     state[1] = state[5];
@@ -133,6 +133,12 @@ define('aes', function () {
       state[i + 1] ^= h ^ xTime[s1 ^ s2];
       state[i + 2] ^= h ^ xTime[s2 ^ s3];
       state[i + 3] ^= h ^ xTime[s3 ^ s0];
+    }
+  }
+
+  function xorBlock(a, b) {
+    for (var i = 0; i < a.length && i < b.length; i++) {
+      a[i] ^= b[i];
     }
   }
 
