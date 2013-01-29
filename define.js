@@ -1,3 +1,7 @@
+// Simple browser module system.
+// Copyright © 2012-2013 Tim Caswell
+// Released under the MIT license.
+
 var defines = {};
 var modules = {};
 

@@ -1,3 +1,8 @@
+// Utility bag for debugging and unit tests.
+// Copyright © 2013 Hookflash Inc.
+// Released under the MIT license.
+// Written by Tim Caswell <tim@creationix.com>
+
 define('utils', function () {
   "use strict";
 
