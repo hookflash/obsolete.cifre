@@ -212,9 +212,57 @@ define('aes', function () {
     }
   }
 
+  function nullPad(data) {
+    if (data.length % 16 === 0) return data;
+    var padded = new Uint8Array(Math.ceil(data.length / 16) * 16);
+    padded.set(data);
+    return padded;
+  }
+
+  function ecbEncrypt(data, key) {
+    if (key.length <= 32) key = keyExpansion(key);
+    data = nullPad(data);
+    var length = data.length;
+    var output = new Uint8Array(length);
+    for (var i = 0; i < length; i += 16) {
+      var chunk = data.subarray(i, i + 16);
+      encrypt(chunk, key);
+      output.set(chunk, i);
+    }
+    return output;
+  }
+
+  function ecbDecrypt(data, key) {
+    if (key.length <= 32) key = keyExpansion(key);
+    var length = data.length;
+    var output = new Uint8Array(length);
+    for (var i = 0; i < length; i += 16) {
+      var chunk = data.subarray(i, i + 16);
+      decrypt(chunk, key);
+      output.set(chunk, i);
+    }
+    return output;
+  }
+
+  function cbcEncrypt(data, key, iv) {
+    throw new Error("TODO: Implement cbcEncrypt");
+  }
+  function cbcDecrypt(data, key, iv) {
+    throw new Error("TODO: Implement cbcDecrypt");
+  }
+  function cfbEncrypt(data, key, iv) {
+    throw new Error("TODO: Implement cfbEncrypt");
+  }
+  function cfbDecrypt(data, key, iv) {
+    throw new Error("TODO: Implement cfbDecrypt");
+  }
+
   return {
     encrypt: encrypt,
     decrypt: decrypt,
-    keyExpansion: keyExpansion
+    keyExpansion: keyExpansion,
+    ecb: { encrypt: ecbEncrypt, decrypt: ecbDecrypt },
+    cbc: { encrypt: cbcEncrypt, decrypt: cbcDecrypt },
+    cfb: { encrypt: cfbEncrypt, decrypt: cfbDecrypt },
   };
 });
