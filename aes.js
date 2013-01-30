@@ -263,45 +263,66 @@ define('aes', function () {
       next.set(chunk);
       decrypt(chunk, key);
       xorBlock(chunk, iv);
-      iv = next;
+      var t = next;
+      next = iv;
+      iv = t;
     }
   }
 
   function cfbEncrypt(state, key, iv) {
     var length = state.length;
     if (key.length <= 32) key = keyExpansion(key);
+    iv = new Uint8Array(iv);
     for (var i = 0; i < length; i += 16) {
-      var chunk = state.subarray(i, i + 16);
       encrypt(iv, key);
-      xorBlock(iv, chunk);
-      chunk.set(iv);
+      for (var j = 0, m = length - i; j < 16 && j < m; j++) {
+        state[j + i] = (iv[j] ^= state[j + i]);
+      }
     }
   }
 
   function cfbDecrypt(state, key, iv) {
     var length = state.length;
     if (key.length <= 32) key = keyExpansion(key);
-    var next = new Uint8Array(16);
+    iv = new Uint8Array(iv);
     for (var i = 0; i < length; i += 16) {
-      var chunk = state.subarray(i, i + 16);
       encrypt(iv, key);
-      next.set(chunk);
-      xorBlock(chunk, iv);
-      iv = next;
+      for (var j = 0, m = length - i; j < 16 && j < m; j++) {
+        var t = state[j + i];
+        state[j + i] = iv[j] ^ t;
+        iv[j] = t;
+      }
     }
   }
 
   function ofbEncrypt(state, key, iv) {
-    throw new Error("TODO: Implement ofbEncrypt");
+    var length = state.length;
+    if (key.length <= 32) key = keyExpansion(key);
+    iv = new Uint8Array(iv);
+    for (var i = 0; i < length; i += 16) {
+      encrypt(iv, key);
+      for (var j = 0, m = length - i; j < 16 && j < m; j++) {
+        state[i + j] ^= iv[j];
+      }
+    }
   }
-  function ofbDecrypt(state, key, iv) {
-    throw new Error("TODO: Implement ofbDecrypt");
-  }
+
   function ctrEncrypt(state, key, iv) {
-    throw new Error("TODO: Implement ctrEncrypt");
-  }
-  function ctrDecrypt(state, key, iv) {
-    throw new Error("TODO: Implement ctrDecrypt");
+    var length = state.length;
+    if (key.length <= 32) key = keyExpansion(key);
+    for (var i = 0; i < length; i += 16) {
+      var nonce = new Uint8Array(iv);
+      var c = i / 16;
+      for (var j = 0; j < 16; j++) {
+        throw new Error("TODO: Implement ctrEncrypt");
+        // nonce[j] ^=
+      }
+      xorBlock(nonce, i / 16);
+      encrypt(nonce);
+      for (var j = 0, m = length - i; j < 16 && j < m; j++) {
+        state[i + j] ^= nonce[j];
+      }
+    }
   }
 
   return {
@@ -312,7 +333,7 @@ define('aes', function () {
     ecb: { encrypt: ecbEncrypt, decrypt: ecbDecrypt },
     cbc: { encrypt: cbcEncrypt, decrypt: cbcDecrypt },
     cfb: { encrypt: cfbEncrypt, decrypt: cfbDecrypt },
-    ofb: { encrypt: ofbEncrypt, decrypt: ofbDecrypt },
-    ctr: { encrypt: ctrEncrypt, decrypt: ctrDecrypt },
+    ofb: { encrypt: ofbEncrypt, decrypt: ofbEncrypt },
+    ctr: { encrypt: ctrEncrypt, decrypt: ctrEncrypt },
   };
 });
