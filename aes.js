@@ -206,11 +206,10 @@ define('aes', function () {
     }
   }
 
-
   function ecbEncrypt(state, key) {
-    if (key.length <= 32) key = keyExpansion(key);
+    if (key.length <= 32) { key = keyExpansion(key); }
     var length = state.length;
-    if (length % 16 > 0) throw new Error("Data length must be multiple of 16");
+    if (length % 16 > 0) { throw new TypeError("Data length must be multiple of 16"); }
     for (var i = 0; i < length; i += 16) {
       var chunk = state.subarray(i, i + 16);
       encrypt(chunk, key);
@@ -219,9 +218,9 @@ define('aes', function () {
   }
 
   function ecbDecrypt(state, key) {
-    if (key.length <= 32) key = keyExpansion(key);
+    if (key.length <= 32) { key = keyExpansion(key); }
     var length = state.length;
-    if (length % 16 > 0) throw new Error("Data length must be multiple of 16");
+    if (length % 16 > 0) { throw new TypeError("Data length must be multiple of 16"); }
     for (var i = length - 16; i >= 0; i -= 16) {
       var chunk = state.subarray(i, i + 16);
       decrypt(chunk, key);
@@ -237,14 +236,14 @@ define('aes', function () {
 
   function newIv() {
     var iv = new Uint8Array(16);
-    crypto.getRandomValues(iv);
+    window.crypto.getRandomValues(iv);
     return iv;
   }
 
   function cbcEncrypt(state, key, iv) {
     var length = state.length;
-    if (length % 16 > 0) throw new Error("Data length must be multiple of 16");
-    if (key.length <= 32) key = keyExpansion(key);
+    if (length % 16 > 0) { throw new TypeError("Data length must be multiple of 16"); }
+    if (key.length <= 32) { key = keyExpansion(key); }
     for (var i = 0; i < length; i += 16) {
       var chunk = state.subarray(i, i + 16);
       xorBlock(chunk, iv);
@@ -255,8 +254,8 @@ define('aes', function () {
 
   function cbcDecrypt(state, key, iv) {
     var length = state.length;
-    if (length % 16 > 0) throw new Error("Data length must be multiple of 16");
-    if (key.length <= 32) key = keyExpansion(key);
+    if (length % 16 > 0) { throw new TypeError("Data length must be multiple of 16"); }
+    if (key.length <= 32) { key = keyExpansion(key); }
     var next = new Uint8Array(16);
     for (var i = 0; i < length; i += 16) {
       var chunk = state.subarray(i, i + 16);
@@ -271,7 +270,7 @@ define('aes', function () {
 
   function cfbEncrypt(state, key, iv) {
     var length = state.length;
-    if (key.length <= 32) key = keyExpansion(key);
+    if (key.length <= 32) { key = keyExpansion(key); }
     iv = new Uint8Array(iv);
     for (var i = 0; i < length; i += 16) {
       encrypt(iv, key);
@@ -283,7 +282,7 @@ define('aes', function () {
 
   function cfbDecrypt(state, key, iv) {
     var length = state.length;
-    if (key.length <= 32) key = keyExpansion(key);
+    if (key.length <= 32) { key = keyExpansion(key); }
     iv = new Uint8Array(iv);
     for (var i = 0; i < length; i += 16) {
       encrypt(iv, key);
@@ -297,7 +296,7 @@ define('aes', function () {
 
   function ofbEncrypt(state, key, iv) {
     var length = state.length;
-    if (key.length <= 32) key = keyExpansion(key);
+    if (key.length <= 32) { key = keyExpansion(key); }
     iv = new Uint8Array(iv);
     for (var i = 0; i < length; i += 16) {
       encrypt(iv, key);
@@ -311,19 +310,17 @@ define('aes', function () {
     var i = 15;
     while (block[i] === 0xff) {
       block[i--] = 0;
-      if (i < 0) i = 15;
+      if (i < 0) { i = 15; }
     }
     block[i] += 1;
   }
 
   function ctrEncrypt(state, key, iv) {
     var length = state.length;
-    if (key.length <= 32) key = keyExpansion(key);
+    if (key.length <= 32) { key = keyExpansion(key); }
     var ctr = new Uint8Array(iv);
     for (var i = 0; i < length; i += 16) {
-
-      if (i > 0) addOne(ctr);
-
+      if (i > 0) { addOne(ctr); }
       var nonce = new Uint8Array(ctr);
       encrypt(nonce, key);
       for (var j = 0, m = length - i; j < 16 && j < m; j++) {
