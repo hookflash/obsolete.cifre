@@ -307,18 +307,25 @@ define('aes', function () {
     }
   }
 
+  function addOne(block) {
+    var i = 15;
+    while (block[i] === 0xff) {
+      block[i--] = 0;
+      if (i < 0) i = 15;
+    }
+    block[i] += 1;
+  }
+
   function ctrEncrypt(state, key, iv) {
     var length = state.length;
     if (key.length <= 32) key = keyExpansion(key);
+    var ctr = new Uint8Array(iv);
     for (var i = 0; i < length; i += 16) {
-      var nonce = new Uint8Array(iv);
-      var c = i / 16;
-      for (var j = 0; j < 16; j++) {
-        throw new Error("TODO: Implement ctrEncrypt");
-        // nonce[j] ^=
-      }
-      xorBlock(nonce, i / 16);
-      encrypt(nonce);
+
+      if (i > 0) addOne(ctr);
+
+      var nonce = new Uint8Array(ctr);
+      encrypt(nonce, key);
       for (var j = 0, m = length - i; j < 16 && j < m; j++) {
         state[i + j] ^= nonce[j];
       }
