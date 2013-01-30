@@ -269,17 +269,39 @@ define('aes', function () {
 
   function cfbEncrypt(state, key, iv) {
     var length = state.length;
-    // if (length % 16 > 0) throw new Error("Data length must be multiple of 16");
     if (key.length <= 32) key = keyExpansion(key);
-    if (!iv) iv = newIv();
-    throw new Error("TODO: Implement cfbEncrypt");
+    for (var i = 0; i < length; i += 16) {
+      var chunk = state.subarray(i, i + 16);
+      encrypt(iv, key);
+      xorBlock(iv, chunk);
+      chunk.set(iv);
+    }
   }
+
   function cfbDecrypt(state, key, iv) {
     var length = state.length;
-    // if (length % 16 > 0) throw new Error("Data length must be multiple of 16");
     if (key.length <= 32) key = keyExpansion(key);
-    if (!iv) iv = newIv();
-    throw new Error("TODO: Implement cfbDecrypt");
+    var next = new Uint8Array(16);
+    for (var i = 0; i < length; i += 16) {
+      var chunk = state.subarray(i, i + 16);
+      encrypt(iv, key);
+      next.set(chunk);
+      xorBlock(chunk, iv);
+      iv = next;
+    }
+  }
+
+  function ofbEncrypt(state, key, iv) {
+    throw new Error("TODO: Implement ofbEncrypt");
+  }
+  function ofbDecrypt(state, key, iv) {
+    throw new Error("TODO: Implement ofbDecrypt");
+  }
+  function ctrEncrypt(state, key, iv) {
+    throw new Error("TODO: Implement ctrEncrypt");
+  }
+  function ctrDecrypt(state, key, iv) {
+    throw new Error("TODO: Implement ctrDecrypt");
   }
 
   return {
@@ -290,5 +312,7 @@ define('aes', function () {
     ecb: { encrypt: ecbEncrypt, decrypt: ecbDecrypt },
     cbc: { encrypt: cbcEncrypt, decrypt: cbcDecrypt },
     cfb: { encrypt: cfbEncrypt, decrypt: cfbDecrypt },
+    ofb: { encrypt: ofbEncrypt, decrypt: ofbDecrypt },
+    ctr: { encrypt: ctrEncrypt, decrypt: ctrDecrypt },
   };
 });
