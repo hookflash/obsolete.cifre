@@ -81,25 +81,36 @@ tests.forEach(function (test) {
   // console.log("EXPANDED KEY");
   // utils.dump(key);
   test[2].forEach(function (test) {
-    var state = utils.fromhex(test[0]);
+    var iv, plainHex, cipherHex;
+    if (test.length === 2) {
+      plainHex = test[0];
+      cipherHex = test[1];
+    }
+    else {
+      iv = utils.fromhex(test[0]);
+      plainHex = test[1];
+      cipherHex = test[2];
+    }
+    var state = utils.fromhex(plainHex);
     console.log("GIVEN PLAIN TEXT");
     utils.dump(state);
-    aes[mode].encrypt(state, key);
+
+    aes[mode].encrypt(state, key, iv);
     console.log("CALCULATED ENCRYPTED TEXT");
     utils.dump(state);
     var output = utils.tohex(state);
-    if (output !== test[1]) {
-      throw new Error(output + " !== " + test[1]);
+    if (output !== cipherHex) {
+      throw new Error(output + " !== " + cipherHex);
     }
-    state = utils.fromhex(test[1]);
+    state = utils.fromhex(cipherHex);
     console.log("GIVEN ENCRYPTED TEXT");
     utils.dump(state);
-    aes[mode].decrypt(state, key);
+    aes[mode].decrypt(state, key, iv);
     console.log("CALCULATED PLAIN TEXT");
     utils.dump(state);
     var output = utils.tohex(state);
-    if (output !== test[0]) {
-      throw new Error(output + " !== " + test[0]);
+    if (output !== plainHex) {
+      throw new Error(output + " !== " + plainHex);
     }
   });
 });
