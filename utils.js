@@ -29,7 +29,11 @@
 
 */
 
-define('utils', function () {
+( // Module boilerplate to support browser globals, node.js and AMD.
+  (typeof module !== "undefined" && function (m) { module.exports = m(); }) ||
+  (typeof define === "function" && function (m) { define("utils", m); }) ||
+  (function (m) { window.utils = m(); })
+)(function () {
   "use strict";
 
   function hex(val) {
@@ -52,7 +56,9 @@ define('utils', function () {
       }
     }
     console.log(rows.map(function (row) {
-      return row.map(hex).join(",");
+      return row.map(function (val, i) {
+        if (val === undefined) return "";
+        return hex(val) + ((i % 4 === 3) ? " " : ","); }).join("");
     }).join("\n"));
   }
 
