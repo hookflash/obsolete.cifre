@@ -29,7 +29,12 @@
 
 */
 
-define('aes', function () {
+
+( // Module boilerplate to support browser globals, node.js and AMD.
+  (typeof module !== "undefined" && function (m) { module.exports = m(); }) ||
+  (typeof define === "function" && function (m) { define("aes", m); }) ||
+  (function (m) { window.aes = m(); })
+)(function () {
   "use strict";
 
   // pre-computed multiplicative inverse in GF(2^8) used by subBytes and keyExpansion.
@@ -345,9 +350,10 @@ define('aes', function () {
     var length = state.length;
     if (key.length <= 32) { key = keyExpansion(key); }
     var ctr = new Uint8Array(iv);
+    var nonce = new Uint8Array(iv.length);
     for (var i = 0; i < length; i += 16) {
       if (i > 0) { addOne(ctr); }
-      var nonce = new Uint8Array(ctr);
+      nonce.set(ctr);
       encrypt(nonce, key);
       for (var j = 0, m = length - i; j < 16 && j < m; j++) {
         state[i + j] ^= nonce[j];
