@@ -29,7 +29,56 @@
 
 */
 
-define('sha1', function () {
+( // Module boilerplate to support browser globals, node.js and AMD.
+  (typeof module !== "undefined" && function (m) { module.exports = m(); }) ||
+  (typeof define === "function" && function (m) { define("sha1", m); }) ||
+  (function (m) { window.sha1 = m(); })
+)(function(){
   "use strict";
 
+  // input is a Uint8Array bitstream of the data
+  return function(input){
+    var H = new Uint32Array([0x67452301, 0xefcdab89, 0x98badcfe, 0x10325476, 0xc3d2e1f0]),
+      m = [],
+      l  = input.length * 8,
+      w  = [];
+
+    for (var i = 0, b = 0; i < l/8; i++, b += 8) m[b >>> 5] |= input[i] << (24 - b % 32);
+
+    m[l >> 5] |= 0x80 << (24 - l % 32);
+    m[((l + 64 >>> 9) << 4) + 15] = l;
+
+    for (var i = 0; i < m.length; i += 16) {
+      var a = H[0], b = H[1], c = H[2], d = H[3], e = H[4];
+
+      for (var j = 0; j < 80; j++) {
+        if (j < 16)
+          w[j] = m[i + j];
+        else {
+          var n = w[j - 3] ^ w[j - 8] ^ w[j - 14] ^ w[j - 16];
+          w[j] = (n << 1) | (n >>> 31);
+        }
+        
+        var t = ((H[0] << 5) | (H[0] >>> 27)) + H[4] + (w[j] >>> 0) + (
+                j < 20 ? (H[1] & H[2] | ~H[1] & H[3]) + 0x5a827999 :
+                j < 40 ? (H[1] ^ H[2] ^ H[3]) + 0x6ed9eba1 :
+                j < 60 ? (H[1] & H[2] | H[1] & H[3] | H[2] & H[3]) - 0x70e44324 :
+                         (H[1] ^ H[2] ^ H[3]) - 0x359d3e2a);
+
+        H[4] = H[3];
+        H[3] = H[2];
+        H[2] = (H[1] << 30) | (H[1] >>> 2);
+        H[1] = H[0];
+        H[0] = t;
+      }
+
+      H[0] += a;
+      H[1] += b;
+      H[2] += c;
+      H[3] += d;
+      H[4] += e;
+    }
+      
+    return new Uint32Array(H.buffer);
+  }
 });
