@@ -32,105 +32,148 @@
 ( // Module boilerplate to support browser globals, node.js and AMD.
   (typeof module !== "undefined" && function (m) { module.exports = m(); }) ||
   (typeof define === "function" && function (m) { define("md5", m); }) ||
-  (function (m) { window.aes = m(); })
+  (function (m) { window.md5 = m(); })
 )(function () {
   "use strict";
 
-  // r specifies the per-round shift amounts
-  var r = new Uint8Array([
-    7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22,
-    5,  9, 14, 20, 5,  9, 14, 20, 5,  9, 14, 20, 5,  9, 14, 20,
-    4, 11, 16, 23, 4, 11, 16, 23, 4, 11, 16, 23, 4, 11, 16, 23,
-    6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15, 21,
-  ]);
+  // based on Alexander Peslyak's public domain MD5 C code
+  // http://openwall.info/wiki/people/solar/software/public-domain-source-code/md5
 
-  // k is binary integer part of the sines of integers (Radians)
-  var k = new  Uint32Array([
-    0xd76aa478, 0xe8c7b756, 0x242070db, 0xc1bdceee,
-    0xf57c0faf, 0x4787c62a, 0xa8304613, 0xfd469501,
-    0x698098d8, 0x8b44f7af, 0xffff5bb1, 0x895cd7be,
-    0x6b901122, 0xfd987193, 0xa679438e, 0x49b40821,
-    0xf61e2562, 0xc040b340, 0x265e5a51, 0xe9b6c7aa,
-    0xd62f105d, 0x02441453, 0xd8a1e681, 0xe7d3fbc8,
-    0x21e1cde6, 0xc33707d6, 0xf4d50d87, 0x455a14ed,
-    0xa9e3e905, 0xfcefa3f8, 0x676f02d9, 0x8d2a4c8a,
-    0xfffa3942, 0x8771f681, 0x6d9d6122, 0xfde5380c,
-    0xa4beea44, 0x4bdecfa9, 0xf6bb4b60, 0xbebfbc70,
-    0x289b7ec6, 0xeaa127fa, 0xd4ef3085, 0x04881d05,
-    0xd9d4d039, 0xe6db99e5, 0x1fa27cf8, 0xc4ac5665,
-    0xf4292244, 0x432aff97, 0xab9423a7, 0xfc93a039,
-    0x655b59c3, 0x8f0ccc92, 0xffeff47d, 0x85845dd1,
-    0x6fa87e4f, 0xfe2ce6e0, 0xa3014314, 0x4e0811a1,
-    0xf7537e82, 0xbd3af235, 0x2ad7d2bb, 0xeb86d391,
-  ], true);
-
-  function rotateLeft(x, c) {
-    return (x << c) | (x >>> (32 - c));
+  // The MD5 transformation for all four rounds.
+  function common(a, b, m, k, s, f) {
+    a += f + m + k;
+    return ((a << s) | (a >>> (32 - s))) + b;
   }
 
-  // input is a Uint8Array bitstream of the data
-  function md5(input) {
+  // The basic MD5 functions.
+  // F and G are optimized from to their RFC 1321 definitions to use XOR.
+  function F(a, b, c, d, m, k, s) { return common(a, b, m, k, s, d ^ (b & (c ^ d))); }
+  function G(a, b, c, d, m, k, s) { return common(a, b, m, k, s, c ^ (d & (b ^ c))); }
+  function H(a, b, c, d, m, k, s) { return common(a, b, m, k, s, b ^ c ^ d); }
+  function I(a, b, c, d, m, k, s) { return common(a, b, m, k, s, c ^ (b | ~d)); }
 
-    // Pad the input and convert to Uint32Array
-    var words = Math.ceil((input.length + 5) / 4);
-    words += 16 - (words % 16);
-    var expanded = new Uint8Array(words * 4);
-    expanded.set(input);
-    expanded[input.length] = 0x80;
-    var o = expanded.length - 8;
-    var l = input.length << 3;
-    while (l) {
-      expanded[o++] = l;
-      l = l >>> 8;
-    }
+  function cycle(state, block) {
+    var a = state[0],
+        b = state[1],
+        c = state[2],
+        d = state[3];
 
-    expanded = new Uint32Array(expanded.buffer);
+      a = F(a, b, c, d, block[0],  0xd76aa478, 7);
+      d = F(d, a, b, c, block[1],  0xe8c7b756, 12);
+      c = F(c, d, a, b, block[2],  0x242070db, 17);
+      b = F(b, c, d, a, block[3],  0xc1bdceee, 22);
+      a = F(a, b, c, d, block[4],  0xf57c0faf, 7);
+      d = F(d, a, b, c, block[5],  0x4787c62a, 12);
+      c = F(c, d, a, b, block[6],  0xa8304613, 17);
+      b = F(b, c, d, a, block[7],  0xfd469501, 22);
+      a = F(a, b, c, d, block[8],  0x698098d8, 7);
+      d = F(d, a, b, c, block[9],  0x8b44f7af, 12);
+      c = F(c, d, a, b, block[10], 0xffff5bb1, 17);
+      b = F(b, c, d, a, block[11], 0x895cd7be, 22);
+      a = F(a, b, c, d, block[12], 0x6b901122, 7);
+      d = F(d, a, b, c, block[13], 0xfd987193, 12);
+      c = F(c, d, a, b, block[14], 0xa679438e, 17);
+      b = F(b, c, d, a, block[15], 0x49b40821, 22);
 
-    var h = new Uint32Array([0x67452301, 0xefcdab89, 0x98badcfe, 0x10325476]);
+      a = G(a, b, c, d, block[1],  0xf61e2562, 5);
+      d = G(d, a, b, c, block[6],  0xc040b340, 9);
+      c = G(c, d, a, b, block[11], 0x265e5a51, 14);
+      b = G(b, c, d, a, block[0],  0xe9b6c7aa, 20);
+      a = G(a, b, c, d, block[5],  0xd62f105d, 5);
+      d = G(d, a, b, c, block[10], 0x02441453, 9);
+      c = G(c, d, a, b, block[15], 0xd8a1e681, 14);
+      b = G(b, c, d, a, block[4],  0xe7d3fbc8, 20);
+      a = G(a, b, c, d, block[9],  0x21e1cde6, 5);
+      d = G(d, a, b, c, block[14], 0xc33707d6, 9);
+      c = G(c, d, a, b, block[3],  0xf4d50d87, 14);
+      b = G(b, c, d, a, block[8],  0x455a14ed, 20);
+      a = G(a, b, c, d, block[13], 0xa9e3e905, 5);
+      d = G(d, a, b, c, block[2],  0xfcefa3f8, 9);
+      c = G(c, d, a, b, block[7],  0x676f02d9, 14);
+      b = G(b, c, d, a, block[12], 0x8d2a4c8a, 20);
 
-    // Process the message in successive 512-bit chunks:
-    for (var j = 0, l = expanded.length; j < l; j += 16) {
-      // break chunk into sixteen 32-bit words w[j], 0 ≤ j ≤ 15
-      var w = expanded.subarray(j, j + 16);
+      a = H(a, b, c, d, block[5],  0xfffa3942, 4);
+      d = H(d, a, b, c, block[8],  0x8771f681, 11);
+      c = H(c, d, a, b, block[11], 0x6d9d6122, 16);
+      b = H(b, c, d, a, block[14], 0xfde5380c, 23);
+      a = H(a, b, c, d, block[1],  0xa4beea44, 4);
+      d = H(d, a, b, c, block[4],  0x4bdecfa9, 11);
+      c = H(c, d, a, b, block[7],  0xf6bb4b60, 16);
+      b = H(b, c, d, a, block[10], 0xbebfbc70, 23);
+      a = H(a, b, c, d, block[13], 0x289b7ec6, 4);
+      d = H(d, a, b, c, block[0],  0xeaa127fa, 11);
+      c = H(c, d, a, b, block[3],  0xd4ef3085, 16);
+      b = H(b, c, d, a, block[6],  0x04881d05, 23);
+      a = H(a, b, c, d, block[9],  0xd9d4d039, 4);
+      d = H(d, a, b, c, block[12], 0xe6db99e5, 11);
+      c = H(c, d, a, b, block[15], 0x1fa27cf8, 16);
+      b = H(b, c, d, a, block[2],  0xc4ac5665, 23);
 
-      // Initialize the hash value for this chunk.
-      var state = new Uint32Array(h);
-      var sb = new Uint8Array(state.buffer);
+      a = I(a, b, c, d, block[0],  0xf4292244, 6);
+      d = I(d, a, b, c, block[7],  0x432aff97, 10);
+      c = I(c, d, a, b, block[14], 0xab9423a7, 15);
+      b = I(b, c, d, a, block[5],  0xfc93a039, 21);
+      a = I(a, b, c, d, block[12], 0x655b59c3, 6);
+      d = I(d, a, b, c, block[3],  0x8f0ccc92, 10);
+      c = I(c, d, a, b, block[10], 0xffeff47d, 15);
+      b = I(b, c, d, a, block[1],  0x85845dd1, 21);
+      a = I(a, b, c, d, block[8],  0x6fa87e4f, 6);
+      d = I(d, a, b, c, block[15], 0xfe2ce6e0, 10);
+      c = I(c, d, a, b, block[6],  0xa3014314, 15);
+      b = I(b, c, d, a, block[13], 0x4e0811a1, 21);
+      a = I(a, b, c, d, block[4],  0xf7537e82, 6);
+      d = I(d, a, b, c, block[11], 0xbd3af235, 10);
+      c = I(c, d, a, b, block[2],  0x2ad7d2bb, 15);
+      b = I(b, c, d, a, block[9],  0xeb86d391, 21);
 
-      // Main Loop
+      state[0] += a;
+      state[1] += b;
+      state[2] += c;
+      state[3] += d;
+  }
+
+  var block = new Uint32Array(16);
+  var bblock = new Uint8Array(block.buffer);
+  var state = new Uint32Array(4);
+  var bstate = new Uint8Array(state.buffer);
+
+  // Process a one or more 512-bit chunks of data.
+  // Expects an array-like value as input.
+  function md5(data) {
+    var dataLength = data.length;
+
+    // Pad the input string.
+    var length = dataLength + 9;
+    length += 64 - (length % 64);
+
+    state[0] = 0x67452301;
+    state[1] = 0xefcdab89;
+    state[2] = 0x98badcfe;
+    state[3] = 0x10325476;
+
+    for (var offset = 0; offset < length; offset += 64) {
       for (var i = 0; i < 64; i++) {
-        var tmp = new Uint32Array(16);
-        var v = new DataView(tmp.buffer);
-
-        var f, g;
-        if (i < 16) {
-          f = (state[3] ^ (state[1] & (state[2] ^ state[3])));
-          g = i;
-        } else if (i < 32) {
-          f = state[2] ^ (state[3] & (state[1] ^ state[2]))
-          g = (5 * i + 1) % 16;
-        } else if (i < 48) {
-          f = state[1] ^ state[2] ^ state[3];
-          g = (3 * i + 5) % 16;
-        } else {
-          f = state[2] ^ (state[1] | (~state[3]));
-          g = (7 * i) % 16;
+        var o = offset + i;
+        if (o < dataLength) {
+          bblock[i] = data[i];
+          continue;
         }
-        f = f >>> 0;
-
-        var temp = state[3];
-        state[3] = state[2];
-        state[2] = state[1];
-        state[1] = (state[1] + rotateLeft(state[0] + f + k[i] + w[g], r[i])) >>> 0;
-        state[0] = temp;
+        if (o === dataLength) {
+          bblock[i] = 0x80;
+          continue;
+        }
+        var x = o - length + 8;
+        if (x >= 0 && x < 4) {
+          bblock[i] = (dataLength << 3 >>> (x * 8)) & 0xff;
+          continue;
+        }
+        bblock[i] = 0;
       }
-      h[0] += state[0];
-      h[1] += state[1];
-      h[2] += state[2];
-      h[3] += state[3];
+      cycle(state, block);
     }
 
-    return new Uint8Array(h.buffer);
+    return bstate;
+
   }
 
   return md5;
