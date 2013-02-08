@@ -42,11 +42,22 @@
     return val.toString(16);
   }
 
+  function ensureArray(buffer) {
+    if (buffer instanceof Uint8Array) {
+      return buffer;
+    }
+    if (buffer instanceof ArrayBuffer || Array.isArray(buffer)) {
+      return new Uint8Array(buffer);
+    }
+    if (buffer.buffer instanceof ArrayBuffer) {
+      return new Uint8Array(buffer.buffer);
+    }
+    throw new TypeError("Invalid buffer type " + buffer);
+  }
+
   // Dump a Uint8Array as a 4-row hex stream
   function dump(block) {
-    if (!(block instanceof Uint8Array)) {
-      block = new Uint8Array(block.buffer);
-    }
+    block = ensureArray(block);
     var rows = new Array(4);
     var width = Math.ceil(block.length / 4);
     for (var i = 0; i < 4; i++) {
@@ -73,6 +84,7 @@
 
   function tohex(array) {
     var string = "";
+    array = ensureArray(array);
     for (var i = 0, l = array.length; i < l; i++) {
       string += hex(array[i]);
     }
