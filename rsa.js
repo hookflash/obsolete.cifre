@@ -29,7 +29,11 @@
 
 */
 
-define('rsa', function () {
+( // Module boilerplate to support browser globals, node.js and AMD.
+  (typeof module !== "undefined" && function (m) { module.exports = m(); }) ||
+  (typeof define === "function" && function (m) { define(m); }) ||
+  (function (m) { window.cifre_rsa = m(); })
+)(function(){
   "use strict";
-
+  return "TODO: Implement RSA";
 });

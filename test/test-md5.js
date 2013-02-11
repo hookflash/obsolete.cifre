@@ -17,7 +17,7 @@ describe("md5", function () {
     var input = tests[i];
     var expectedHex = tests[i + 1];
     it("Should hash '" + input + "' to '" + expectedHex + "'", function () {
-      var hash = utils.tohex(md5(utils.stringToBuffer(input)));
+      var hash = utils.tohex(md5(utils.stringToArray(input)));
       assert.equal(expectedHex, hash);
     });
   }

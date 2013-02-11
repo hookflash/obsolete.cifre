@@ -1,6 +1,6 @@
 {
   "name": "cifre",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "Fast crypto toolkit for modern client-side JavaScript",
   "keywords": ["cipher", "md5", "sha1", "sha256", "rsa", "aes", "crypto"],
   "author": "Tim Caswell <tim@creationix.com>",
@@ -8,6 +8,7 @@
   "scripts": {
     "test": "mocha -R spec"
   },
+  "main": "cifre.js",
   "devDependencies": {
     "mocha": "~0.1.8.1"
   },

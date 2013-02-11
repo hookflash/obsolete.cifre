@@ -31,8 +31,8 @@
 
 ( // Module boilerplate to support browser globals, node.js and AMD.
   (typeof module !== "undefined" && function (m) { module.exports = m(); }) ||
-  (typeof define === "function" && function (m) { define("utils", m); }) ||
-  (function (m) { window.utils = m(); })
+  (typeof define === "function" && function (m) { define(m); }) ||
+  (function (m) { window.cifre_utils = m(); })
 )(function () {
   "use strict";
 
@@ -91,23 +91,33 @@
     return string;
   }
 
-  // Convert a JS string into a UTF-8 encoded byte array.
-  function stringToBuffer(string) {
-    // Convert the unicode string to be the ASCII representation of
-    // the UTF-8 bytes.
+  function stringToArray(string) {
+    // UTF-8 encode the string using one character per byte
     string = unescape(encodeURIComponent(string));
     var length = string.length;
-    var buf = new Uint8Array(length);
+    var arr = new Array(length);
     for (var i = 0; i < length; i++) {
-      buf[i] = string.charCodeAt(i);
+      arr[i] = string.charCodeAt(i);
     }
-    return buf;
+    return arr;
+  }
+
+  function stringToBuffer(string) {
+    // UTF-8 encode the string using one character per byte
+    string = unescape(encodeURIComponent(string));
+    var length = string.length;
+    var arr = new Uint8Array(length);
+    for (var i = 0; i < length; i++) {
+      arr[i] = string.charCodeAt(i);
+    }
+    return arr;
   }
 
   return {
     dump: dump,
     tohex: tohex,
     fromhex: fromhex,
-    stringToBuffer: stringToBuffer,
+    stringToArray: stringToArray,
+    stringToBuffer: stringToBuffer
   };
 });

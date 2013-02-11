@@ -32,8 +32,8 @@
 
 ( // Module boilerplate to support browser globals, node.js and AMD.
   (typeof module !== "undefined" && function (m) { module.exports = m(); }) ||
-  (typeof define === "function" && function (m) { define("aes", m); }) ||
-  (function (m) { window.aes = m(); })
+  (typeof define === "function" && function (m) { define(m); }) ||
+  (function (m) { window.cifre_aes = m(); })
 )(function () {
   "use strict";
 

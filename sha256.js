@@ -29,7 +29,16 @@
 
 */
 
-define('sha256', function () {
+( // Module boilerplate to support browser globals, node.js and AMD.
+  (typeof module !== "undefined" && function (m) { module.exports = m(); }) ||
+  (typeof define === "function" && function (m) { define(m); }) ||
+  (function (m) { window.cifre_sha256 = m(); })
+)(function(){
   "use strict";
 
+  function sha256(input) {
+    throw new Error("TODO: Implement sha256");
+  }
+
+  return sha256;
 });
