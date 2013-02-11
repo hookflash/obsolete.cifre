@@ -10,7 +10,7 @@
   },
   "main": "cifre.js",
   "devDependencies": {
-    "mocha": "~0.1.8.1"
+    "mocha": "~1.8.1"
   },
   "repository": {
     "type": "git",
