@@ -36,8 +36,196 @@
 )(function(){
   "use strict";
 
+  var K = new Uint32Array([
+    0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
+    0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
+    0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
+    0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967,
+    0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85,
+    0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
+    0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
+    0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2,
+  ]);
+
+  var state = new Uint32Array(8);
+  var bstate = new Uint8Array(state.buffer);
+
+  // Create a buffer for each 64 word block.
+  var block = new Uint32Array(64);
+
+  function hex8(num) {
+    var hex = num.toString(16).toUpperCase();
+    return "00000000".substr(hex.length) + hex;
+  }
+
+  function tobits(num) {
+    var str = num.toString(2);
+    return "00000000000000000000000000000000".substr(str.length) + str;
+  }
+
+  function ror(n, i) {
+    return ((n << (32 - i) >>> 0) | (n >>> i)) >>> 0
+  }
+
+  function cycle(state, block) {
+    var a = state[0],
+        b = state[1],
+        c = state[2],
+        d = state[3],
+        e = state[4],
+        f = state[5],
+        g = state[6],
+        h = state[7];
+
+    console.log("\nInitial hash value:");
+    for (var i = 0; i < 8; i++) {
+      console.log("  H[" + i + "] = " + hex8(state[i]));
+    }
+    console.log("\nBlock Contents:");
+    for (var i = 0; i < 16; i++) {
+        console.log("  W[" + i + "] = " + hex8(block[i]));
+    }
+
+    var partial;
+    function fn(a, b, c, d, e, f, g, h, w, k) {
+      var s1 = (ror(e, 6) ^ ror(e, 11) ^ ror(e, 25)) >>> 0;
+      var ch = ((e & f) ^ ((~e) & g)) >>> 0;
+      partial = (h + w + k + ch + s1) >>> 0;
+      var s0 = (ror(a, 2) ^ ror(a, 13) ^ ror(a, 22)) >>> 0;
+      var ma = (a & (b ^ c)) ^ (b & c);
+      return (partial + ma + s0) >>> 0;
+    }
+
+    console.log("\n         A         B         C         D         E         F         G         H");
+    // Partially unroll loops so we don't have to shift variables.
+    for (var i = 0; i < 64; i += 8) {
+      h = fn(a, b, c, d, e, f, g, h, block[i], K[i]); d = (partial + d) >>> 0;
+      console.log("t=%s: %s  %s  %s  %s  %s  %s  %s  %s", i,
+        hex8(h), hex8(a), hex8(b), hex8(c), hex8(d), hex8(e), hex8(f), hex8(g));
+      g = fn(h, a, b, c, d, e, f, g, block[i], K[i]); c = (partial + c) >>> 0;
+      console.log("t=%s: %s  %s  %s  %s  %s  %s  %s  %s", i + 1,
+        hex8(g), hex8(h), hex8(a), hex8(b), hex8(c), hex8(d), hex8(e), hex8(f));
+      f = fn(g, h, a, b, c, d, e, f, block[i], K[i]); b = (partial + b) >>> 0;
+      console.log("t=%s: %s  %s  %s  %s  %s  %s  %s  %s", i + 2,
+        hex8(f), hex8(g), hex8(h), hex8(a), hex8(b), hex8(c), hex8(d), hex8(e));
+      e = fn(f, g, h, a, b, c, d, e, block[i], K[i]); a = (partial + a) >>> 0;
+      console.log("t=%s: %s  %s  %s  %s  %s  %s  %s  %s", i + 3,
+        hex8(e), hex8(f), hex8(g), hex8(h), hex8(a), hex8(b), hex8(c), hex8(d));
+      d = fn(e, f, g, h, a, b, c, d, block[i], K[i]); h = (partial + h) >>> 0;
+      console.log("t=%s: %s  %s  %s  %s  %s  %s  %s  %s", i + 4,
+        hex8(d), hex8(e), hex8(f), hex8(g), hex8(h), hex8(a), hex8(b), hex8(c));
+      c = fn(d, e, f, g, h, a, b, c, block[i], K[i]); g = (partial + g) >>> 0;
+      console.log("t=%s: %s  %s  %s  %s  %s  %s  %s  %s", i + 5,
+        hex8(c), hex8(d), hex8(e), hex8(f), hex8(g), hex8(h), hex8(a), hex8(b));
+      b = fn(c, d, e, f, g, h, a, b, block[i], K[i]); f = (partial + f) >>> 0;
+      console.log("t=%s: %s  %s  %s  %s  %s  %s  %s  %s", i + 6,
+        hex8(b), hex8(c), hex8(d), hex8(e), hex8(f), hex8(g), hex8(h), hex8(a));
+      a = fn(b, c, d, e, f, g, h, a, block[i], K[i]); e = (partial + e) >>> 0;
+      console.log("t=%s: %s  %s  %s  %s  %s  %s  %s  %s", i + 7,
+        hex8(a), hex8(b), hex8(c), hex8(d), hex8(e), hex8(f), hex8(g), hex8(h));
+
+      throw "TODO: Fixme";
+
+      d = fn(e, a, b, c, d, block[i + 1]);  a = ((a << 30) | (a >>> 2)) >>> 0;
+      // console.log("t=%s: %s  %s  %s  %s  %s", i + 1,
+      //   hex8(d), hex8(e), hex8(a), hex8(b), hex8(c));
+      c = fn(d, e, a, b, c, block[i + 2]);  e = ((e << 30) | (e >>> 2)) >>> 0;
+      // console.log("t=%s: %s  %s  %s  %s  %s", i + 2,
+      //   hex8(c), hex8(d), hex8(e), hex8(a), hex8(b));
+      b = fn(c, d, e, a, b, block[i + 3]);  d = ((d << 30) | (d >>> 2)) >>> 0;
+      // console.log("t=%s: %s  %s  %s  %s  %s", i + 3,
+      //   hex8(b), hex8(c), hex8(d), hex8(e), hex8(a));
+      a = fn(b, c, d, e, a, block[i + 4]);  c = ((c << 30) | (c >>> 2)) >>> 0;
+      // console.log("t=%s: %s  %s  %s  %s  %s", i + 4,
+      //   hex8(a), hex8(b), hex8(c), hex8(d), hex8(e));
+    }
+
+    // console.log();
+    // process.stdout.write("H[0] = " + hex8(state[0]) + " + " + hex8(a));
+    state[0] += a;
+    // console.log(" = " + hex8(state[0]));
+    // process.stdout.write("H[1] = " + hex8(state[1]) + " + " + hex8(b));
+    state[1] += b;
+    // console.log(" = " + hex8(state[1]));
+    // process.stdout.write("H[2] = " + hex8(state[2]) + " + " + hex8(c));
+    state[2] += c;
+    // console.log(" = " + hex8(state[2]));
+    // process.stdout.write("H[3] = " + hex8(state[3]) + " + " + hex8(d));
+    state[3] += d;
+    // console.log(" = " + hex8(state[3]));
+    // process.stdout.write("H[4] = " + hex8(state[4]) + " + " + hex8(e));
+    state[4] += e;
+    // console.log(" = " + hex8(state[4]));
+
+  }
+
   function sha256(input) {
-    throw new Error("TODO: Implement sha256");
+    var inputLength = input.length;
+
+    // Pad the input string length.
+    var length = inputLength + 9;
+    length += 64 - (length % 64);
+
+    state[0] = 0x6a09e667;
+    state[1] = 0xbb67ae85;
+    state[2] = 0x3c6ef372;
+    state[3] = 0xa54ff53a;
+    state[4] = 0x510e527f;
+    state[5] = 0x9b05688c;
+    state[6] = 0x1f83d9ab;
+    state[7] = 0x5be0cd19;
+
+    for (var offset = 0; offset < length; offset += 64) {
+
+      // Copy input to block and write padding as needed
+      for (var i = 0; i < 64; i++) {
+        var b = 0,
+            o = offset + i;
+        if (o < inputLength) {
+          b = input[i];
+        }
+        else if (o === inputLength) {
+          b = 0x80;
+        }
+        else {
+          // Write original bit length as a 64bit big-endian integer to the end.
+          var x = length - o - 1;
+          if (x >= 0 && x < 4) {
+            b = (inputLength << 3 >>> (x * 8)) & 0xff;
+          }
+        }
+        // Interpret the input bytes as big-endian per the spec
+        if (i % 4 === 0) {
+          block[i >> 2] = b << 24;
+        }
+        else {
+          block[i >> 2] |= b << ((3 - (i % 4)) * 8);
+        }
+      }
+
+      // Extend the block
+      for (var i = 16; i < 64; i++) {
+        var s0 = block[i - 15];
+        s0 = ror(s0, 7) ^ ror(s0, 18) ^ (s0 >>> 3);
+        var s1 = block[i - 2];
+        s1 = ror(s1, 17) ^ ror(s1, 19) ^ (s1 >>> 10);
+        block[i] = block[i - 16] + s0 + block[i - 7] + s1;
+      }
+
+      cycle(state, block);
+    }
+
+    // Swap the bytes around since they are little endian internally
+    return [
+      bstate[3], bstate[2], bstate[1], bstate[0],
+      bstate[7], bstate[6], bstate[5], bstate[4],
+      bstate[11], bstate[10], bstate[9], bstate[8],
+      bstate[15], bstate[14], bstate[13], bstate[12],
+      bstate[19], bstate[18], bstate[17], bstate[16],
+      bstate[23], bstate[22], bstate[21], bstate[20],
+      bstate[27], bstate[26], bstate[25], bstate[24],
+      bstate[31], bstate[30], bstate[29], bstate[28],
+    ];
   }
 
   return sha256;

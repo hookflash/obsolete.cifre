@@ -62,10 +62,10 @@
     return common(a, e, w, 0xCA62C1D6, b ^ c ^ d);
   }
 
-  function hex8(num) {
-    var hex = num.toString(16).toUpperCase();
-    return "00000000".substr(hex.length) + hex;
-  }
+  // function hex8(num) {
+  //   var hex = num.toString(16).toUpperCase();
+  //   return "00000000".substr(hex.length) + hex;
+  // }
 
   function cycle(state, block) {
     var a = state[0],
@@ -132,10 +132,9 @@
 
     var inputLength = input.length;
 
-    // Pad the input string.
+    // Pad the input string length.
     var length = inputLength + 9;
     length += 64 - (length % 64);
-
 
     state[0] = 0x67452301;
     state[1] = 0xefcdab89;
