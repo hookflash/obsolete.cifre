@@ -49,6 +49,7 @@ Object.keys(data).forEach(function (mode) {
   console.log("Testing " + mode + " decryption...");
   aes[mode].decrypt(state, expandedKey, iv);
   assert.equal(tohex(state), test.input);
+  test.iv && assert.equal(tohex(iv), test.iv);
   console.log("VERIFIED, benchmarking");
   bench(function () {
     aes[mode].encrypt(state, expandedKey, iv);

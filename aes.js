@@ -84,7 +84,6 @@
     xTime[i + 128] = (i << 1) ^ 0x1b;
   }
 
-  var expanded = new Uint8Array(32 * 4 + 112);
 
   // Accepts 16, 24, and 32 byte byte arrays in Uint8Array format.
   // Returns a new expanded key schedule array.
@@ -95,7 +94,9 @@
     }
     var size = length * 4 + 112;
     var state = new Uint8Array(size);
-    state.set(key);
+    for (var i = 0; i < length; i++) {
+      state[i] = key[i];
+    }
     for (var i = length; i < size; i += 4) {
       var o = i - length;
       var s0 = state[i - 4], b0 = state[o],
