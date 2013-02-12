@@ -1,6 +1,5 @@
 var sha1 = require('../sha1');
 var stringToBuffer = require('../utils').stringToBuffer;
-var sjclSha1 = require('./sjcl-sha1');
 var dump = require('../utils').dump;
 var tohex = require('../utils').tohex;
 var assert = require('assert');
