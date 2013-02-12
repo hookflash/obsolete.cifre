@@ -56,7 +56,6 @@ Object.keys(data).forEach(function (mode) {
     aes[mode].decrypt(state, expandedKey, iv);
   });
   assert.equal(tohex(state), test.input);
-  test.iv && assert.equal(tohex(iv), test.iv);
 });
 
 function bench(fn) {
