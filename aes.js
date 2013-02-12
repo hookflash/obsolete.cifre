@@ -84,6 +84,8 @@
     xTime[i + 128] = (i << 1) ^ 0x1b;
   }
 
+  var expanded = new Uint8Array(32 * 4 + 112);
+
   // Accepts 16, 24, and 32 byte byte arrays in Uint8Array format.
   // Returns a new expanded key schedule array.
   function keyExpansion(key) {
@@ -125,93 +127,96 @@
   // input is 16 bytes vector of input data that will be mutated in place.
   // key is the output on AES.keyExpansion(key) on a 16, 24, or 32 byte key.
   // vectors must implement .length and [] access. (JS array or Uint8Array)
-  function encrypt(state, key) {
-    addRoundKey(state, key, 0);
+  function encrypt(state, key, offset) {
+    offset = offset || 0;
+    addRoundKey(state, offset, key, 0);
     for (var i = 16, l = key.length - 16; i < l; i += 16) {
-      subBytes(state);
-      shiftRows(state);
-      mixColumns(state);
-      addRoundKey(state, key, i);
+      subBytes(state, offset);
+      shiftRows(state, offset);
+      mixColumns(state, offset);
+      addRoundKey(state, offset, key, i);
     }
-    subBytes(state);
-    shiftRows(state);
-    addRoundKey(state, key, i);
+    subBytes(state, offset);
+    shiftRows(state, offset);
+    addRoundKey(state, offset, key, i);
   }
 
-  function decrypt(state, key) {
+  function decrypt(state, key, offset) {
+    offset = offset || 0;
     var length = key.length;
-    addRoundKey(state, key, length - 16);
-    unshiftRows(state);
-    unsubBytes(state);
+    addRoundKey(state, offset, key, length - 16);
+    unshiftRows(state, offset);
+    unsubBytes(state, offset);
     for (var i = length - 32; i >= 16; i -= 16) {
-      addRoundKey(state, key, i);
-      unmixColumns(state);
-      unshiftRows(state);
-      unsubBytes(state);
+      addRoundKey(state, offset, key, i);
+      unmixColumns(state, offset);
+      unshiftRows(state, offset);
+      unsubBytes(state, offset);
     }
-    addRoundKey(state, key, 0);
+    addRoundKey(state, offset, key, 0);
   }
 
-  function subBytes(state) {
-    for (var i = 0, l = state.length; i < l; i++) {
+  function subBytes(state, offset) {
+    for (var i = offset, l = Math.min(state.length, offset + 16); i < l; i++) {
       state[i] = sBox[state[i]];
     }
   }
 
-  function unsubBytes(state) {
-    for (var i = 0, l = state.length; i < l; i++) {
+  function unsubBytes(state, offset) {
+    for (var i = offset, l = Math.min(state.length, offset + 16); i < l; i++) {
       state[i] = sBoxInv[state[i]];
     }
   }
 
-  function addRoundKey(state, keySchedule, offset) {
-    for (var i = 0, l = state.length; i < l; i++) {
-      state[i] = state[i] ^ keySchedule[offset + i];
+  function addRoundKey(state, offset, keySchedule, keyOffset) {
+    keyOffset -= offset;
+    for (var i = offset, l = Math.min(state.length, offset + 16); i < l; i++) {
+      state[i] = state[i] ^ keySchedule[keyOffset + i];
     }
   }
 
   // shift rows 0, 1, 2, and 3 columns left respectively
-  function shiftRows(state) {
-    var tmp = state[1];
-    state[1] = state[5];
-    state[5] = state[9];
-    state[9] = state[13];
-    state[13] = tmp;
-    tmp = state[2];
-    state[2] = state[10];
-    state[10] = tmp;
-    tmp = state[6];
-    state[6] = state[14];
-    state[14] = tmp;
-    tmp = state[15];
-    state[15] = state[11];
-    state[11] = state[7];
-    state[7] = state[3];
-    state[3] = tmp;
+  function shiftRows(state, offset) {
+    var tmp = state[1 + offset];
+    state[1 + offset] = state[5 + offset];
+    state[5 + offset] = state[9 + offset];
+    state[9 + offset] = state[13 + offset];
+    state[13 + offset] = tmp;
+    tmp = state[2 + offset];
+    state[2 + offset] = state[10 + offset];
+    state[10 + offset] = tmp;
+    tmp = state[6 + offset];
+    state[6 + offset] = state[14 + offset];
+    state[14 + offset] = tmp;
+    tmp = state[15 + offset];
+    state[15 + offset] = state[11 + offset];
+    state[11 + offset] = state[7 + offset];
+    state[7 + offset] = state[3 + offset];
+    state[3 + offset] = tmp;
   }
 
   // Undo a shiftRows action
-  function unshiftRows(state) {
-    var tmp = state[13];
-    state[13] = state[9];
-    state[9] = state[5];
-    state[5] = state[1];
-    state[1] = tmp;
-    tmp = state[2];
-    state[2] = state[10];
-    state[10] = tmp;
-    tmp = state[6];
-    state[6] = state[14];
-    state[14] = tmp;
-    tmp = state[3];
-    state[3] = state[7];
-    state[7] = state[11];
-    state[11] = state[15];
-    state[15] = tmp;
+  function unshiftRows(state, offset) {
+    var tmp = state[13 + offset];
+    state[13 + offset] = state[9 + offset];
+    state[9 + offset] = state[5 + offset];
+    state[5 + offset] = state[1 + offset];
+    state[1 + offset] = tmp;
+    tmp = state[2 + offset];
+    state[2 + offset] = state[10 + offset];
+    state[10 + offset] = tmp;
+    tmp = state[6 + offset];
+    state[6 + offset] = state[14 + offset];
+    state[14 + offset] = tmp;
+    tmp = state[3 + offset];
+    state[3 + offset] = state[7 + offset];
+    state[7 + offset] = state[11 + offset];
+    state[11 + offset] = state[15 + offset];
+    state[15 + offset] = tmp;
   }
 
-  function mixColumns(state) {
-    for (var i = 0; i < 16; i += 4) {
+  function mixColumns(state, offset) {
+    for (var i = offset, l = offset + 16; i < l; i += 4) {
       var s0 = state[i],     s2 = state[i + 2],
           s1 = state[i + 1], s3 = state[i + 3];
       var h = s0 ^ s1 ^ s2 ^ s3;
@@ -222,8 +227,8 @@
     }
   }
 
-  function unmixColumns(state) {
-    for (var i = 0; i < 16; i += 4) {
+  function unmixColumns(state, offset) {
+    for (var i = offset, l = offset + 16; i < l; i += 4) {
       var s0 = state[i],     s2 = state[i + 2],
           s1 = state[i + 1], s3 = state[i + 3];
       var h = s0 ^ s1 ^ s2 ^ s3;
@@ -242,9 +247,7 @@
     var length = state.length;
     if (length % 16 > 0) { throw new TypeError("Data length must be multiple of 16"); }
     for (var i = 0; i < length; i += 16) {
-      var chunk = state.subarray(i, i + 16);
-      encrypt(chunk, key);
-      state.set(chunk, i);
+      encrypt(state, key, i);
     }
   }
 
@@ -253,9 +256,7 @@
     var length = state.length;
     if (length % 16 > 0) { throw new TypeError("Data length must be multiple of 16"); }
     for (var i = length - 16; i >= 0; i -= 16) {
-      var chunk = state.subarray(i, i + 16);
-      decrypt(chunk, key);
-      state.set(chunk, i);
+      decrypt(state, key, i);
     }
   }
 
@@ -270,6 +271,8 @@
     window.crypto.getRandomValues(iv);
     return iv;
   }
+
+  var temp = new Uint8Array(16);
 
   function cbcEncrypt(state, key, iv) {
     var length = state.length;
@@ -287,14 +290,13 @@
     var length = state.length;
     if (length % 16 > 0) { throw new TypeError("Data length must be multiple of 16"); }
     if (key.length <= 32) { key = keyExpansion(key); }
-    var next = new Uint8Array(16);
     for (var i = 0; i < length; i += 16) {
       var chunk = state.subarray(i, i + 16);
-      next.set(chunk);
+      temp.set(chunk);
       decrypt(chunk, key);
       xorBlock(chunk, iv);
-      var t = next;
-      next = iv;
+      var t = temp;
+      temp = iv;
       iv = t;
     }
   }
@@ -302,7 +304,6 @@
   function cfbEncrypt(state, key, iv) {
     var length = state.length;
     if (key.length <= 32) { key = keyExpansion(key); }
-    iv = new Uint8Array(iv);
     for (var i = 0; i < length; i += 16) {
       encrypt(iv, key);
       for (var j = 0, m = length - i; j < 16 && j < m; j++) {
@@ -314,7 +315,6 @@
   function cfbDecrypt(state, key, iv) {
     var length = state.length;
     if (key.length <= 32) { key = keyExpansion(key); }
-    iv = new Uint8Array(iv);
     for (var i = 0; i < length; i += 16) {
       encrypt(iv, key);
       for (var j = 0, m = length - i; j < 16 && j < m; j++) {
@@ -328,7 +328,6 @@
   function ofbEncrypt(state, key, iv) {
     var length = state.length;
     if (key.length <= 32) { key = keyExpansion(key); }
-    iv = new Uint8Array(iv);
     for (var i = 0; i < length; i += 16) {
       encrypt(iv, key);
       for (var j = 0, m = length - i; j < 16 && j < m; j++) {
