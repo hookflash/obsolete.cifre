@@ -260,9 +260,9 @@
     }
   }
 
-  function xorBlock(a, b) {
+  function xorBlock(a, offsetA, b, offsetB) {
     for (var i = 0; i < 16; i++) {
-      a[i] ^= b[i];
+      a[i + offsetA] ^= b[i + offsetB];
     }
   }
 
@@ -272,17 +272,21 @@
     return iv;
   }
 
-  var temp = new Uint8Array(16);
+  var temp1 = new Uint8Array(16);
+  var temp2 = new Uint8Array(16);
+
+  // Great diagrams for the cipher modes at http://en.wikipedia.org/wiki/Block_cipher_modes_of_operation
 
   function cbcEncrypt(state, key, iv) {
     var length = state.length;
     if (length % 16 > 0) { throw new TypeError("Data length must be multiple of 16"); }
     if (key.length <= 32) { key = keyExpansion(key); }
+    var ivOffset = 0;
     for (var i = 0; i < length; i += 16) {
-      var chunk = state.subarray(i, i + 16);
-      xorBlock(chunk, iv);
-      encrypt(chunk, key);
-      iv = chunk;
+      xorBlock(state, i, iv, ivOffset);
+      encrypt(state, key, i);
+      iv = state;
+      ivOffset = i;
     }
   }
 
@@ -290,24 +294,30 @@
     var length = state.length;
     if (length % 16 > 0) { throw new TypeError("Data length must be multiple of 16"); }
     if (key.length <= 32) { key = keyExpansion(key); }
+    var old = temp1;
+    var next = temp2;
     for (var i = 0; i < length; i += 16) {
-      var chunk = state.subarray(i, i + 16);
-      temp.set(chunk);
-      decrypt(chunk, key);
-      xorBlock(chunk, iv);
-      var t = temp;
-      temp = iv;
-      iv = t;
+      for (var j = 0; j < 16; j++) {
+        old[j] = state[j + i];
+      }
+      decrypt(state, key, i);
+      xorBlock(state, i, iv, 0);
+      iv = old;
+      old = next;
+      next = iv;
     }
   }
 
   function cfbEncrypt(state, key, iv) {
     var length = state.length;
     if (key.length <= 32) { key = keyExpansion(key); }
+    for (var i = 0; i < 16; i++) {
+      temp1[i] = iv[i];
+    }
     for (var i = 0; i < length; i += 16) {
-      encrypt(iv, key);
-      for (var j = 0, m = length - i; j < 16 && j < m; j++) {
-        state[j + i] = (iv[j] ^= state[j + i]);
+      encrypt(temp1, key);
+      for (var j = 0, l = Math.min(16, length - i); j < l; j++) {
+        state[j + i] = (temp1[j] ^= state[j + i]);
       }
     }
   }
@@ -315,12 +325,15 @@
   function cfbDecrypt(state, key, iv) {
     var length = state.length;
     if (key.length <= 32) { key = keyExpansion(key); }
+    for (var i = 0; i < 16; i++) {
+      temp1[i] = iv[i];
+    }
     for (var i = 0; i < length; i += 16) {
-      encrypt(iv, key);
-      for (var j = 0, m = length - i; j < 16 && j < m; j++) {
+      encrypt(temp1, key);
+      for (var j = 0, l = Math.min(16, length - i); j < l; j++) {
         var t = state[j + i];
-        state[j + i] = iv[j] ^ t;
-        iv[j] = t;
+        state[j + i] = temp1[j] ^ t;
+        temp1[j] = t;
       }
     }
   }
@@ -328,10 +341,13 @@
   function ofbEncrypt(state, key, iv) {
     var length = state.length;
     if (key.length <= 32) { key = keyExpansion(key); }
+    for (var i = 0; i < 16; i++) {
+      temp1[i] = iv[i];
+    }
     for (var i = 0; i < length; i += 16) {
-      encrypt(iv, key);
+      encrypt(temp1, key);
       for (var j = 0, m = length - i; j < 16 && j < m; j++) {
-        state[i + j] ^= iv[j];
+        state[i + j] ^= temp1[j];
       }
     }
   }
@@ -348,14 +364,17 @@
   function ctrEncrypt(state, key, iv) {
     var length = state.length;
     if (key.length <= 32) { key = keyExpansion(key); }
-    var ctr = new Uint8Array(iv);
-    var nonce = new Uint8Array(iv.length);
+    for (var i = 0; i < 16; i++) {
+      temp1[i] = iv[i];
+    }
     for (var i = 0; i < length; i += 16) {
-      if (i > 0) { addOne(ctr); }
-      nonce.set(ctr);
-      encrypt(nonce, key);
-      for (var j = 0, m = length - i; j < 16 && j < m; j++) {
-        state[i + j] ^= nonce[j];
+      if (i > 0) { addOne(temp1); }
+      for (var j = 0; j < 16; j++) {
+        temp2[j] = temp1[j];
+      }
+      encrypt(temp2, key);
+      for (var j = 0, l = Math.min(16, length - i); j < l; j++) {
+        state[i + j] ^= temp2[j];
       }
     }
   }

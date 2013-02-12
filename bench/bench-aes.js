@@ -38,18 +38,18 @@ var data = {
 };
 
 Object.keys(data).forEach(function (mode) {
-  console.log("\nTesting " + mode + " mode:");
   var test = data[mode];
   var key = fromhex(test.key);
   var expandedKey = aes.keyExpansion(key);
   var iv = test.iv && fromhex(test.iv);
   var state = fromhex(test.input);
+  console.log("Testing " + mode + " encryption...");
   aes[mode].encrypt(state, expandedKey, iv);
   assert.equal(tohex(state), test.output);
-  var iv = test.iv && fromhex(test.iv);
+  console.log("Testing " + mode + " decryption...");
   aes[mode].decrypt(state, expandedKey, iv);
   assert.equal(tohex(state), test.input);
-  console.log("VERIFIED, benchmarking " + mode);
+  console.log("VERIFIED, benchmarking");
   bench(function () {
     aes[mode].encrypt(state, expandedKey, iv);
     aes[mode].decrypt(state, expandedKey, iv);
@@ -76,6 +76,6 @@ function bench(fn) {
     count += i;
     delta = Date.now() - before;
     console.log(Math.floor(count / delta * 1000));
-  } while (delta < 100)
+  } while (delta < 2000)
   return output;
 }
