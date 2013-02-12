@@ -53,21 +53,37 @@
   // Create a buffer for each 64 word block.
   var block = new Uint32Array(64);
 
-  function hex8(num) {
-    var hex = num.toString(16).toUpperCase();
-    return "00000000".substr(hex.length) + hex;
-  }
-
-  function tobits(num) {
-    var str = num.toString(2);
-    return "00000000000000000000000000000000".substr(str.length) + str;
-  }
+  // function hex8(num) {
+  //   var hex = num.toString(16).toUpperCase();
+  //   return "00000000".substr(hex.length) + hex;
+  // }
 
   function ror(n, i) {
-    return ((n << (32 - i) >>> 0) | (n >>> i)) >>> 0
+    return (n << (32 - i)) | (n >>> i);
+  }
+
+  function fn1(e, f, g, h, w, k) {
+    return (ror(e, 6) ^ ror(e, 11) ^ ror(e, 25)) +
+           ((e & f) ^ ((~e) & g)) + h + w + k;
+  }
+  function fn2(a, b, c, p) {
+    return p + (ror(a, 2) ^ ror(a, 13) ^ ror(a, 22)) +
+           ((a & (b ^ c)) ^ (b & c));
+  }
+
+  function extend(block) {
+    // Extend the block
+    for (var i = 16; i < 64; i++) {
+      var s0 = block[i - 15];
+      s0 = ror(s0, 7) ^ ror(s0, 18) ^ (s0 >>> 3);
+      var s1 = block[i - 2];
+      s1 = ror(s1, 17) ^ ror(s1, 19) ^ (s1 >>> 10);
+      block[i] = block[i - 16] + s0 + block[i - 7] + s1;
+    }
   }
 
   function cycle(state, block) {
+
     var a = state[0],
         b = state[1],
         c = state[2],
@@ -75,69 +91,48 @@
         e = state[4],
         f = state[5],
         g = state[6],
-        h = state[7];
+        h = state[7],
+        p;
 
-    console.log("\nInitial hash value:");
-    for (var i = 0; i < 8; i++) {
-      console.log("  H[" + i + "] = " + hex8(state[i]));
-    }
-    console.log("\nBlock Contents:");
-    for (var i = 0; i < 16; i++) {
-        console.log("  W[" + i + "] = " + hex8(block[i]));
-    }
+    extend(block);
 
-    var partial;
-    function fn(a, b, c, d, e, f, g, h, w, k) {
-      var s1 = (ror(e, 6) ^ ror(e, 11) ^ ror(e, 25)) >>> 0;
-      var ch = ((e & f) ^ ((~e) & g)) >>> 0;
-      partial = (h + w + k + ch + s1) >>> 0;
-      var s0 = (ror(a, 2) ^ ror(a, 13) ^ ror(a, 22)) >>> 0;
-      var ma = (a & (b ^ c)) ^ (b & c);
-      return (partial + ma + s0) >>> 0;
-    }
+    // console.log("\nInitial hash value:");
+    // for (var i = 0; i < 8; i++) {
+    //   console.log("  H[" + i + "] = " + hex8(state[i]));
+    // }
+    // console.log("\nBlock Contents:");
+    // for (var i = 0; i < 16; i++) {
+    //     console.log("  W[" + i + "] = " + hex8(block[i]));
+    // }
 
-    console.log("\n         A         B         C         D         E         F         G         H");
+
+    // console.log("\n         A         B         C         D         E         F         G         H");
     // Partially unroll loops so we don't have to shift variables.
     for (var i = 0; i < 64; i += 8) {
-      h = fn(a, b, c, d, e, f, g, h, block[i], K[i]); d = (partial + d) >>> 0;
-      console.log("t=%s: %s  %s  %s  %s  %s  %s  %s  %s", i,
-        hex8(h), hex8(a), hex8(b), hex8(c), hex8(d), hex8(e), hex8(f), hex8(g));
-      g = fn(h, a, b, c, d, e, f, g, block[i], K[i]); c = (partial + c) >>> 0;
-      console.log("t=%s: %s  %s  %s  %s  %s  %s  %s  %s", i + 1,
-        hex8(g), hex8(h), hex8(a), hex8(b), hex8(c), hex8(d), hex8(e), hex8(f));
-      f = fn(g, h, a, b, c, d, e, f, block[i], K[i]); b = (partial + b) >>> 0;
-      console.log("t=%s: %s  %s  %s  %s  %s  %s  %s  %s", i + 2,
-        hex8(f), hex8(g), hex8(h), hex8(a), hex8(b), hex8(c), hex8(d), hex8(e));
-      e = fn(f, g, h, a, b, c, d, e, block[i], K[i]); a = (partial + a) >>> 0;
-      console.log("t=%s: %s  %s  %s  %s  %s  %s  %s  %s", i + 3,
-        hex8(e), hex8(f), hex8(g), hex8(h), hex8(a), hex8(b), hex8(c), hex8(d));
-      d = fn(e, f, g, h, a, b, c, d, block[i], K[i]); h = (partial + h) >>> 0;
-      console.log("t=%s: %s  %s  %s  %s  %s  %s  %s  %s", i + 4,
-        hex8(d), hex8(e), hex8(f), hex8(g), hex8(h), hex8(a), hex8(b), hex8(c));
-      c = fn(d, e, f, g, h, a, b, c, block[i], K[i]); g = (partial + g) >>> 0;
-      console.log("t=%s: %s  %s  %s  %s  %s  %s  %s  %s", i + 5,
-        hex8(c), hex8(d), hex8(e), hex8(f), hex8(g), hex8(h), hex8(a), hex8(b));
-      b = fn(c, d, e, f, g, h, a, b, block[i], K[i]); f = (partial + f) >>> 0;
-      console.log("t=%s: %s  %s  %s  %s  %s  %s  %s  %s", i + 6,
-        hex8(b), hex8(c), hex8(d), hex8(e), hex8(f), hex8(g), hex8(h), hex8(a));
-      a = fn(b, c, d, e, f, g, h, a, block[i], K[i]); e = (partial + e) >>> 0;
-      console.log("t=%s: %s  %s  %s  %s  %s  %s  %s  %s", i + 7,
-        hex8(a), hex8(b), hex8(c), hex8(d), hex8(e), hex8(f), hex8(g), hex8(h));
-
-      throw "TODO: Fixme";
-
-      d = fn(e, a, b, c, d, block[i + 1]);  a = ((a << 30) | (a >>> 2)) >>> 0;
-      // console.log("t=%s: %s  %s  %s  %s  %s", i + 1,
-      //   hex8(d), hex8(e), hex8(a), hex8(b), hex8(c));
-      c = fn(d, e, a, b, c, block[i + 2]);  e = ((e << 30) | (e >>> 2)) >>> 0;
-      // console.log("t=%s: %s  %s  %s  %s  %s", i + 2,
-      //   hex8(c), hex8(d), hex8(e), hex8(a), hex8(b));
-      b = fn(c, d, e, a, b, block[i + 3]);  d = ((d << 30) | (d >>> 2)) >>> 0;
-      // console.log("t=%s: %s  %s  %s  %s  %s", i + 3,
-      //   hex8(b), hex8(c), hex8(d), hex8(e), hex8(a));
-      a = fn(b, c, d, e, a, block[i + 4]);  c = ((c << 30) | (c >>> 2)) >>> 0;
-      // console.log("t=%s: %s  %s  %s  %s  %s", i + 4,
-      //   hex8(a), hex8(b), hex8(c), hex8(d), hex8(e));
+      h = fn2(a, b, c, p = fn1(e, f, g, h, block[i], K[i])); d = (p + d);
+      // console.log("t=%s: %s  %s  %s  %s  %s  %s  %s  %s", i,
+      //   hex8(h), hex8(a), hex8(b), hex8(c), hex8(d), hex8(e), hex8(f), hex8(g));
+      g = fn2(h, a, b, p = fn1(d, e, f, g, block[i + 1], K[i + 1])); c = (p + c);
+      // console.log("t=%s: %s  %s  %s  %s  %s  %s  %s  %s", i + 1,
+      //   hex8(g), hex8(h), hex8(a), hex8(b), hex8(c), hex8(d), hex8(e), hex8(f));
+      f = fn2(g, h, a, p = fn1(c, d, e, f, block[i + 2], K[i + 2])); b = (p + b);
+      // console.log("t=%s: %s  %s  %s  %s  %s  %s  %s  %s", i + 2,
+      //   hex8(f), hex8(g), hex8(h), hex8(a), hex8(b), hex8(c), hex8(d), hex8(e));
+      e = fn2(f, g, h, p = fn1(b, c, d, e, block[i + 3], K[i + 3])); a = (p + a);
+      // console.log("t=%s: %s  %s  %s  %s  %s  %s  %s  %s", i + 3,
+      //   hex8(e), hex8(f), hex8(g), hex8(h), hex8(a), hex8(b), hex8(c), hex8(d));
+      d = fn2(e, f, g, p = fn1(a, b, c, d, block[i + 4], K[i + 4])); h = (p + h);
+      // console.log("t=%s: %s  %s  %s  %s  %s  %s  %s  %s", i + 4,
+      //   hex8(d), hex8(e), hex8(f), hex8(g), hex8(h), hex8(a), hex8(b), hex8(c));
+      c = fn2(d, e, f, p = fn1(h, a, b, c, block[i + 5], K[i + 5])); g = (p + g);
+      // console.log("t=%s: %s  %s  %s  %s  %s  %s  %s  %s", i + 5,
+      //   hex8(c), hex8(d), hex8(e), hex8(f), hex8(g), hex8(h), hex8(a), hex8(b));
+      b = fn2(c, d, e, p = fn1(g, h, a, b, block[i + 6], K[i + 6])); f = (p + f);
+      // console.log("t=%s: %s  %s  %s  %s  %s  %s  %s  %s", i + 6,
+      //   hex8(b), hex8(c), hex8(d), hex8(e), hex8(f), hex8(g), hex8(h), hex8(a));
+      a = fn2(b, c, d, p = fn1(f, g, h, a, block[i + 7], K[i + 7])); e = (p + e);
+      // console.log("t=%s: %s  %s  %s  %s  %s  %s  %s  %s", i + 7,
+      //   hex8(a), hex8(b), hex8(c), hex8(d), hex8(e), hex8(f), hex8(g), hex8(h));
     }
 
     // console.log();
@@ -156,6 +151,15 @@
     // process.stdout.write("H[4] = " + hex8(state[4]) + " + " + hex8(e));
     state[4] += e;
     // console.log(" = " + hex8(state[4]));
+    // process.stdout.write("H[5] = " + hex8(state[5]) + " + " + hex8(f));
+    state[5] += f;
+    // console.log(" = " + hex8(state[5]));
+    // process.stdout.write("H[6] = " + hex8(state[6]) + " + " + hex8(g));
+    state[6] += g;
+    // console.log(" = " + hex8(state[6]));
+    // process.stdout.write("H[7] = " + hex8(state[7]) + " + " + hex8(h));
+    state[7] += h;
+    // console.log(" = " + hex8(state[7]));
 
   }
 
@@ -201,15 +205,6 @@
         else {
           block[i >> 2] |= b << ((3 - (i % 4)) * 8);
         }
-      }
-
-      // Extend the block
-      for (var i = 16; i < 64; i++) {
-        var s0 = block[i - 15];
-        s0 = ror(s0, 7) ^ ror(s0, 18) ^ (s0 >>> 3);
-        var s1 = block[i - 2];
-        s1 = ror(s1, 17) ^ ror(s1, 19) ^ (s1 >>> 10);
-        block[i] = block[i - 16] + s0 + block[i - 7] + s1;
       }
 
       cycle(state, block);
