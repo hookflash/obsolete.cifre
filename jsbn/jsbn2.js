@@ -87,7 +87,7 @@ function bnpFromNumber(a,b,c) {
     if(a < 2) this.fromInt(1);
     else {
       this.fromNumber(a,c);
-      if(!this.testBit(a-1))  // force MSB set
+      if(!this.testBit(a-1))	// force MSB set
         this.bitwiseTo(BigInteger.ONE.shiftLeft(a-1),op_or,this);
       if(this.isEven()) this.dAddOffset(1,0); // force odd
       while(!this.isProbablePrime(b)) {
@@ -448,7 +448,7 @@ function bnModPow(e,m) {
     n = k;
     while((w&1) == 0) { w >>= 1; --n; }
     if((i -= n) < 0) { i += this.DB; --j; }
-    if(is1) { // ret == 1, don't bother squaring or multiplying it
+    if(is1) {	// ret == 1, don't bother squaring or multiplying it
       g[w].copyTo(r);
       is1 = false;
     }
