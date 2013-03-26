@@ -149,7 +149,7 @@
         var b = 0,
             o = offset + i;
         if (o < inputLength) {
-          b = input[i];
+          b = input[o];
         }
         else if (o === inputLength) {
           b = 0x80;
