@@ -163,7 +163,9 @@
 
     // Pad the input string.
     var length = inputLength + 9;
-    length += 64 - (length % 64);
+    if (length % 64) {
+      length += 64 - (length % 64);
+    }
 
     state[0] = 0x67452301;
     state[1] = 0xefcdab89;
