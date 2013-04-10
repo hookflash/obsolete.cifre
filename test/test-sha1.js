@@ -15,8 +15,8 @@ var tests = [
   "abcdefghijklmnopqrstuvwxyz", "32d10c7b8cf96570ca04ce37f2a19d84240d3a89",
   "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq",
     "84983e441c3bd26ebaae4aa1f95129e5e54670f1",
-  lotsOfA,
-    "34aa973cd4c4daa4f61eeb2bdbad27316534016f",
+  //lotsOfA,
+  //  "34aa973cd4c4daa4f61eeb2bdbad27316534016f",
   "asdfasdfasdfasdfasdfasdfasdfasdfasdfsadfsadfsdfasdfasdfasdfasdfsf",
     "c834ca59bc7ca88127749729ed71babf0b1c963a"
 ]
