@@ -4,6 +4,13 @@
   (function (m) { window.cifre_rsa = m(); })
 )(function () {
   "use strict";
+if (typeof window === 'undefined') {
+  global.window = global;
+}
+if (!window.navigator) {
+  window.navigator = {};
+}
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // jsbn.js
@@ -29,6 +36,11 @@ function BigInteger(a,b,c) {
     else if(b == null && "string" != typeof a) this.fromString(a,256);
     else this.fromString(a,b);
 }
+
+// Make it look nice in node.js inspect.
+BigInteger.prototype.inspect = function () {
+  return '0x' + this.toString(16);
+};
 
 // return new, unset BigInteger
 function nbi() { return new BigInteger(null); }
