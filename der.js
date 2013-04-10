@@ -1,4 +1,4 @@
-var BigInteger = require('cifre/rsa').BigInteger;
+var BigInteger = require('./rsa').BigInteger;
 
 exports.decode = decode;
 function decode(data) {
