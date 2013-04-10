@@ -1,5 +1,60 @@
 var BigInteger = require('./rsa').BigInteger;
 
+// Implements a subset or DER/BER codec needed for RSA keys.
+
+var log256 = Math.log(256);
+
+function encodeInteger(value) {
+  if (value === 0) { return [0]; }
+  var length = 1 + Math.floor(Math.log(value) / log256);
+  var array = new Array(length);
+  while (value) {
+    array[--length] = value & 0xff;
+    value /= 0x100;
+  }
+  return array;
+}
+
+function encodeBigInteger(value) {
+  return value.toByteArray();
+}
+
+function encodeSequence(value) {
+  var arr = [];
+  for (var i = 0, l = value.length; i < l; i++) {
+    arr = arr.concat(encode(value[i]));
+  }
+  return arr;
+}
+
+exports.encode = encode;
+function encode(value) {
+
+  var data;
+  var type;
+  if (value instanceof BigInteger) {
+    data = encodeBigInteger(value);
+    type = 0x02;
+  }
+  else if (typeof value === 'number') {
+    data = encodeInteger(value);
+    type = 0x02;
+  }
+  else if (Array.isArray(value)) {
+    data = encodeSequence(value);
+    type = 0x30;
+  }
+  else {
+    throw new Error("Unknown value: " + value);
+  }
+  var length = data.length;
+  if (length < 0x80) {
+    return [type, length].concat(data);
+  }
+  var l = encodeInteger(length);
+  return [type, l.length | 0x80].concat(l).concat(data);
+}
+
 exports.decode = decode;
 function decode(data) {
   var offset = 0;
