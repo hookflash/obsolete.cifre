@@ -127,4 +127,18 @@ forge.random.getBytes = function(count) {
   return _ctx.generate(count);
 };
 
+
+// Use node's native byte generator if available.
+try {
+  var crypto = require('crypto');
+  if (typeof crypto.randomBytes === 'function') {
+    forge.random.getBytes = function (count) {
+      return crypto.randomBytes(count).toString('binary');
+    };
+  }
+}
+catch (err) {
+  // We weren't in node.js
+}
+
 })(typeof(jQuery) !== 'undefined' ? jQuery : null);

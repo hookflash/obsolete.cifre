@@ -63,6 +63,11 @@ function BigInteger(a,b,c) {
     else this.fromString(a,b);
 }
 
+// Add inspect to work well with node.js
+BigInteger.prototype.inspect = function () {
+  return "0x" + this.toString(16);
+};
+
 // return new, unset BigInteger
 function nbi() { return new BigInteger(null); }
 
