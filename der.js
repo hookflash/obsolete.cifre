@@ -1,4 +1,4 @@
-var BigInteger = require('./rsa').BigInteger;
+var BigInteger = require('./forge/jsbn');
 
 // Implements a subset or DER/BER codec needed for RSA keys.
 

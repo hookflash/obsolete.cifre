@@ -4,7 +4,7 @@ var decode = require('../der').decode;
 var utils = require('../utils');
 var fs = require('fs');
 var assert = require('assert');
-var BigInteger = require('../rsa').BigInteger;
+var BigInteger = require('../forge/jsbn');
 
 var pem = fs.readFileSync(__dirname + "/key.pem", "ascii");
 pem = pem.split("\n").slice(1, -2).join("");
