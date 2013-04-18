@@ -134,22 +134,16 @@
  * 0x06062A864886F70D
  */
 (function() {
+var deps = {
+  util: './util',
+  pki: {
+    oids: './oids'
+  }
+};
+var name = 'asn1';
+function initModule(forge) {
+/* ########## Begin module implementation ########## */
 
-// define forge
-if(typeof(window) !== 'undefined') {
-  var forge = window.forge = window.forge || {};
-  forge.asn1 = {};
-}
-// define node.js module
-else if(typeof(module) !== 'undefined' && module.exports) {
-  var forge = {
-    util: require('./util'),
-    pki: {
-      oids: require('./oids')
-    }
-  };
-  module.exports = forge.asn1 = {};
-}
 
 /* ASN.1 implementation and API */
 var asn1 = forge.asn1;
@@ -208,6 +202,18 @@ asn1.create = function(tagClass, type, constructed, value) {
     constructed, it will contain a list of other asn1 objects. If not,
     it will contain the ASN.1 value as an array of bytes formatted
     according to the ASN.1 data type. */
+
+  // remove undefined values
+  if(value.constructor == Array) {
+    var tmp = [];
+    for(var i = 0; i < value.length; ++i) {
+      if(value[i] !== undefined) {
+        tmp.push(value[i]);
+      }
+    }
+    value = tmp;
+  }
+
   return {
     tagClass: tagClass,
     type: type,
@@ -971,13 +977,18 @@ asn1.prettyPrint = function(obj, level, indentation) {
   rval += indent + 'Constructed: ' + obj.constructed + '\n';
 
   if(obj.composed) {
-    rval += indent + 'Sub values: ' + obj.value.length;
+    var subvalues = 0;
+    var sub = '';
     for(var i = 0; i < obj.value.length; ++i) {
-      rval += asn1.prettyPrint(obj.value[i], level + 1, indentation);
-      if((i + 1) < obj.value.length) {
-        rval += ',';
+      if(obj.value[i] !== undefined) {
+        subvalues += 1;
+        sub += asn1.prettyPrint(obj.value[i], level + 1, indentation);
+        if((i + 1) < obj.value.length) {
+          sub += ',';
+        }
       }
     }
+    rval += indent + 'Sub values: ' + subvalues + sub;
   }
   else {
     rval += indent + 'Value: ';
@@ -1005,4 +1016,66 @@ asn1.prettyPrint = function(obj, level, indentation) {
   return rval;
 };
 
+
+/* ########## Begin module wrapper ########## */
+}
+var cjsDefine = null;
+if (typeof define !== 'function') {
+  // CommonJS -> AMD
+  if (typeof exports === 'object') {
+    cjsDefine = function(ids, factory) {
+      module.exports = factory.apply(null, ids.map(function(id) {
+        return require(id);
+      }));
+    }
+  } else
+  // <script>
+  {
+    var forge = window.forge = window.forge || {};
+    forge[name] = forge[name] || {};
+    initModule(forge);
+  }
+}
+// AMD
+if (cjsDefine || typeof define === 'function') {
+  var ids = [];
+  var assigns = [];
+  // Convert `deps` dependency declaration tree into AMD dependency list.
+  function forEachDep(path, deps) {
+    function assign(path) {
+      var index = ids.length;
+      ids.push(deps[path[path.length-1]]);
+      // Create helper function used after import below.
+      assigns.push(function(forge, args) {
+        var id;
+        while(path.length > 1) {
+          id = path.shift();
+          forge = forge[id] = forge[id] || {};
+        }
+        forge[path[0]] = args[index];
+      });
+    }
+    for (var alias in deps) {
+      if (typeof deps[alias] === 'string') {
+        assign(path.concat(alias));
+      } else {
+        forEachDep(path.concat(alias), deps[alias]);
+      }
+    }
+    return forge;
+  }
+  forEachDep([], deps);
+  // Declare module AMD style.
+  (cjsDefine || define)(ids, function() {
+    var args = arguments;
+    var forge = {};
+    // Assemble AMD imported modules into `forge` dependency tree.
+    assigns.forEach(function(assign) {
+      assign(forge, args);
+    });
+    forge[name] = forge[name] || {};
+    initModule(forge);
+    return forge[name];
+  });
+}
 })();

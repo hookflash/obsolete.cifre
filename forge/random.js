@@ -13,23 +13,19 @@
  *
  * Copyright (c) 2009-2012 Digital Bazaar, Inc.
  */
-(function($) {
+(function() {
+var deps = {
+  aes: './aes',
+  md: './md',
+  prng: './prng',
+  util: './util'
+};
+var name = 'random';
+function initModule(forge) {
+/* ########## Begin module implementation ########## */
 
-// define forge
-if(typeof(window) !== 'undefined') {
-  var forge = window.forge = window.forge || {};
-  forge.random = {};
-}
-// define node.js module
-else if(typeof(module) !== 'undefined' && module.exports) {
-  var forge = {
-    aes: require('./aes'),
-    md: require('./md'),
-    prng: require('./prng'),
-    util: require('./util')
-  };
-  module.exports = forge.random = {};
-}
+
+(function($) {
 
 // the default prng plugin, uses AES-128
 var prng_aes = {};
@@ -49,7 +45,7 @@ prng_aes.formatKey = function(key) {
 };
 prng_aes.formatSeed = function(seed) {
   // convert seed into 32-bit integers
-  tmp = forge.util.createBuffer(seed);
+  var tmp = forge.util.createBuffer(seed);
   seed = new Array(4);
   seed[0] = tmp.getInt32();
   seed[1] = tmp.getInt32();
@@ -127,18 +123,68 @@ forge.random.getBytes = function(count) {
   return _ctx.generate(count);
 };
 
+})(typeof(jQuery) !== 'undefined' ? jQuery : null);
 
-// Use node's native byte generator if available.
-try {
-  var crypto = require('crypto');
-  if (typeof crypto.randomBytes === 'function') {
-    forge.random.getBytes = function (count) {
-      return crypto.randomBytes(count).toString('binary');
-    };
+
+/* ########## Begin module wrapper ########## */
+}
+var cjsDefine = null;
+if (typeof define !== 'function') {
+  // CommonJS -> AMD
+  if (typeof exports === 'object') {
+    cjsDefine = function(ids, factory) {
+      module.exports = factory.apply(null, ids.map(function(id) {
+        return require(id);
+      }));
+    }
+  } else
+  // <script>
+  {
+    var forge = window.forge = window.forge || {};
+    forge[name] = forge[name] || {};
+    initModule(forge);
   }
 }
-catch (err) {
-  // We weren't in node.js
+// AMD
+if (cjsDefine || typeof define === 'function') {
+  var ids = [];
+  var assigns = [];
+  // Convert `deps` dependency declaration tree into AMD dependency list.
+  function forEachDep(path, deps) {
+    function assign(path) {
+      var index = ids.length;
+      ids.push(deps[path[path.length-1]]);
+      // Create helper function used after import below.
+      assigns.push(function(forge, args) {
+        var id;
+        while(path.length > 1) {
+          id = path.shift();
+          forge = forge[id] = forge[id] || {};
+        }
+        forge[path[0]] = args[index];
+      });
+    }
+    for (var alias in deps) {
+      if (typeof deps[alias] === 'string') {
+        assign(path.concat(alias));
+      } else {
+        forEachDep(path.concat(alias), deps[alias]);
+      }
+    }
+    return forge;
+  }
+  forEachDep([], deps);
+  // Declare module AMD style.
+  (cjsDefine || define)(ids, function() {
+    var args = arguments;
+    var forge = {};
+    // Assemble AMD imported modules into `forge` dependency tree.
+    assigns.forEach(function(assign) {
+      assign(forge, args);
+    });
+    forge[name] = forge[name] || {};
+    initModule(forge);
+    return forge[name];
+  });
 }
-
-})(typeof(jQuery) !== 'undefined' ? jQuery : null);
+})();
