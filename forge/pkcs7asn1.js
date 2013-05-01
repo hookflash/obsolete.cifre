@@ -72,24 +72,18 @@
  * EncryptedKey ::= OCTET STRING
  */
 (function() {
-var deps = {
-  asn1: './asn1',
-  util: './util'
-};
-var name = 'pkcs7asn1';
-function initModule(forge) {
 /* ########## Begin module implementation ########## */
-
+function initModule(forge) {
 
 // shortcut for ASN.1 API
 var asn1 = forge.asn1;
 
 // shortcut for PKCS#7 API
-var p7v = forge.pkcs7asn1;
+var p7v = forge.pkcs7asn1 = forge.pkcs7asn1 || {};
 forge.pkcs7 = forge.pkcs7 || {};
 forge.pkcs7.asn1 = p7v;
 
-p7v.contentInfoValidator = {
+var contentInfoValidator = {
   name: 'ContentInfo',
   tagClass: asn1.Class.UNIVERSAL,
   type: asn1.Type.SEQUENCE,
@@ -109,6 +103,7 @@ p7v.contentInfoValidator = {
     captureAsn1: 'content'
   }]
 };
+p7v.contentInfoValidator = contentInfoValidator;
 
 var encryptedContentInfoValidator = {
   name: 'EncryptedContentInfo',
@@ -205,6 +200,93 @@ p7v.encryptedDataValidator = {
   }].concat(encryptedContentInfoValidator)
 };
 
+var signerValidator = {
+  name: 'SignerInfo',
+  tagClass: asn1.Class.UNIVERSAL,
+  type: asn1.Type.SEQUENCE,
+  constructed: true,
+  value: [{
+    name: 'SignerInfo.Version',
+    tagClass: asn1.Class.UNIVERSAL,
+    type: asn1.Type.INTEGER,
+    constructed: false
+  }, {
+    name: 'SignerInfo.IssuerAndSerialNumber',
+    tagClass: asn1.Class.UNIVERSAL,
+    type: asn1.Type.SEQUENCE,
+    constructed: true
+  }, {
+    name: 'SignerInfo.DigestAlgorithm',
+    tagClass: asn1.Class.UNIVERSAL,
+    type: asn1.Type.SEQUENCE,
+    constructed: true
+  }, {
+    name: 'SignerInfo.AuthenticatedAttributes',
+    tagClass: asn1.Class.CONTEXT_SPECIFIC,
+    type: 0,
+    constructed: true,
+    optional: true,
+    capture: 'authenticatedAttributes'
+  }, {
+    name: 'SignerInfo.DigestEncryptionAlgorithm',
+    tagClass: asn1.Class.UNIVERSAL,
+    type: asn1.Type.SEQUENCE,
+    constructed: true
+  }, {
+    name: 'SignerInfo.EncryptedDigest',
+    tagClass: asn1.Class.UNIVERSAL,
+    type: asn1.Type.OCTETSTRING,
+    constructed: false,
+    capture: 'signature'
+  }, {
+    name: 'SignerInfo.UnauthenticatedAttributes',
+    tagClass: asn1.Class.CONTEXT_SPECIFIC,
+    type: 1,
+    constructed: true,
+    optional: true
+  }]
+};
+
+p7v.signedDataValidator = {
+  name: 'SignedData',
+  tagClass: asn1.Class.UNIVERSAL,
+  type: asn1.Type.SEQUENCE,
+  constructed: true,
+  value: [{
+    name: 'SignedData.Version',
+    tagClass: asn1.Class.UNIVERSAL,
+    type: asn1.Type.INTEGER,
+    constructed: false,
+    capture: 'version'
+  }, {
+    name: 'SignedData.DigestAlgorithms',
+    tagClass: asn1.Class.UNIVERSAL,
+    type: asn1.Type.SET,
+    constructed: true,
+    captureAsn1: 'digestAlgorithms'
+  },
+  contentInfoValidator,
+  {
+    name: 'SignedData.Certificates',
+    tagClass: asn1.Class.CONTEXT_SPECIFIC,
+    type: 0,
+    optional: true,
+    captureAsn1: 'certificates'
+  }, {
+    name: 'SignedData.CertificateRevocationLists',
+    tagClass: asn1.Class.CONTEXT_SPECIFIC,
+    type: 1,
+    optional: true,
+    captureAsn1: 'crls'
+  }, {
+    name: 'SignedData.SignerInfos',
+    tagClass: asn1.Class.UNIVERSAL,
+    type: asn1.Type.SET,
+    capture: 'signerInfos',
+    value: [signerValidator]
+  }]
+};
+
 p7v.recipientInfoValidator = {
   name: 'RecipientInfo',
   tagClass: asn1.Class.UNIVERSAL,
@@ -260,66 +342,46 @@ p7v.recipientInfoValidator = {
   }]
 };
 
+} // end module implementation
 
 /* ########## Begin module wrapper ########## */
-}
-var cjsDefine = null;
-if (typeof define !== 'function') {
-  // CommonJS -> AMD
-  if (typeof exports === 'object') {
-    cjsDefine = function(ids, factory) {
-      module.exports = factory.apply(null, ids.map(function(id) {
-        return require(id);
-      }));
-    }
-  } else
+var name = 'pkcs7asn1';
+var deps = ['./asn1', './util'];
+var nodeDefine = null;
+if(typeof define !== 'function') {
+  // NodeJS -> AMD
+  if(typeof module === 'object' && module.exports) {
+    nodeDefine = function(ids, factory) {
+      factory(require, module);
+    };
+  }
   // <script>
-  {
-    var forge = window.forge = window.forge || {};
-    forge[name] = forge[name] || {};
+  else {
+    forge = window.forge = window.forge || {};
     initModule(forge);
   }
 }
 // AMD
-if (cjsDefine || typeof define === 'function') {
-  var ids = [];
-  var assigns = [];
-  // Convert `deps` dependency declaration tree into AMD dependency list.
-  function forEachDep(path, deps) {
-    function assign(path) {
-      var index = ids.length;
-      ids.push(deps[path[path.length-1]]);
-      // Create helper function used after import below.
-      assigns.push(function(forge, args) {
-        var id;
-        while(path.length > 1) {
-          id = path.shift();
-          forge = forge[id] = forge[id] || {};
-        }
-        forge[path[0]] = args[index];
-      });
-    }
-    for (var alias in deps) {
-      if (typeof deps[alias] === 'string') {
-        assign(path.concat(alias));
-      } else {
-        forEachDep(path.concat(alias), deps[alias]);
+if(nodeDefine || typeof define === 'function') {
+  // define module AMD style
+  (nodeDefine || define)(['require', 'module'].concat(deps),
+  function(require, module) {
+    module.exports = function(forge) {
+      var mods = deps.map(function(dep) {
+        return require(dep);
+      }).concat(initModule);
+      // handle circular dependencies
+      forge = forge || {};
+      forge.defined = forge.defined || {};
+      if(forge.defined[name]) {
+        return forge[name];
       }
-    }
-    return forge;
-  }
-  forEachDep([], deps);
-  // Declare module AMD style.
-  (cjsDefine || define)(ids, function() {
-    var args = arguments;
-    var forge = {};
-    // Assemble AMD imported modules into `forge` dependency tree.
-    assigns.forEach(function(assign) {
-      assign(forge, args);
-    });
-    forge[name] = forge[name] || {};
-    initModule(forge);
-    return forge[name];
+      forge.defined[name] = true;
+      for(var i = 0; i < mods.length; ++i) {
+        mods[i](forge);
+      }
+      return forge[name];
+    };
   });
 }
 })();

@@ -27,13 +27,8 @@
  * Copyright (c) 2012 Stefan Siegl <stesie@brokenpipe.de>
  */
 (function() {
-var deps = {
-  util: './util'
-};
-var name = 'des';
-function initModule(forge) {
 /* ########## Begin module implementation ########## */
-
+function initModule(forge) {
 
 var spfunction1 = [0x1010400,0,0x10000,0x1010404,0x1010004,0x10404,0x4,0x10000,0x400,0x1010400,0x1010404,0x400,0x1000404,0x1010004,0x1000000,0x4,0x404,0x1000400,0x1000400,0x10400,0x10400,0x1010000,0x1010000,0x1000404,0x10004,0x1000004,0x1000004,0x10004,0,0x404,0x10404,0x1000000,0x10000,0x1010404,0x4,0x1010000,0x1010400,0x1000000,0x1000000,0x400,0x1010004,0x10000,0x10400,0x1000004,0x400,0x4,0x1000404,0x10404,0x1010404,0x10004,0x1010000,0x1000404,0x1000004,0x404,0x10404,0x1010400,0x404,0x1000400,0x1000400,0,0x10004,0x10400,0,0x1010004];
 var spfunction2 = [-0x7fef7fe0,-0x7fff8000,0x8000,0x108020,0x100000,0x20,-0x7fefffe0,-0x7fff7fe0,-0x7fffffe0,-0x7fef7fe0,-0x7fef8000,-0x80000000,-0x7fff8000,0x100000,0x20,-0x7fefffe0,0x108000,0x100020,-0x7fff7fe0,0,-0x80000000,0x8000,0x108020,-0x7ff00000,0x100020,-0x7fffffe0,0,0x108000,0x8020,-0x7fef8000,-0x7ff00000,0x8020,0,0x108020,-0x7fefffe0,0x100000,-0x7fff7fe0,-0x7ff00000,-0x7fef8000,0x8000,-0x7ff00000,-0x7fff8000,0x20,-0x7fef7fe0,0x108020,0x20,0x8000,-0x80000000,0x8020,-0x7fef8000,0x100000,-0x7fffffe0,0x100020,-0x7fff7fe0,-0x7fffffe0,0x100020,0x108000,0,-0x7fff8000,0x8020,-0x80000000,-0x7fefffe0,-0x7fef7fe0,0x108000];
@@ -79,7 +74,7 @@ function des_createKeys (key) {
   var shifts = [0, 0, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 0];
 
   var n = 0, temp;
-  for (var j = 0; j < iterations; j ++) {
+  for(var j = 0; j < iterations; j ++) {
     var left = key.getInt32();
     var right = key.getInt32();
 
@@ -99,9 +94,9 @@ function des_createKeys (key) {
     right = temp;
 
     //now go through and perform these shifts on the left and right keys
-    for (var i=0; i < shifts.length; i++) {
+    for(var i=0; i < shifts.length; i++) {
       //shift the keys either one or two bits to the left
-      if (shifts[i]) {
+      if(shifts[i]) {
         left = (left << 2) | (left >>> 26); right = (right << 2) | (right >>> 26);
       } else {
         left = (left << 1) | (left >>> 27); right = (right << 1) | (right >>> 27);
@@ -163,7 +158,7 @@ var _createCipher = function(key, encrypt)
   var iterations = keys.length == 32 ? 3 : 9;  // single or triple des
   var looping;
 
-  if (iterations == 3) {
+  if(iterations == 3) {
     looping = encrypt
       ? [0, 32, 2]
       : [30, -2, -2];
@@ -226,8 +221,8 @@ var _createCipher = function(key, encrypt)
         var right = _input.getInt32();
 
         //for Cipher Block Chaining mode, xor the message with the previous result
-        if (mode == 1) {
-          if (encrypt) {
+        if(mode == 1) {
+          if(encrypt) {
             left ^= cbcleft;
             right ^= cbcright;
           } else {
@@ -245,16 +240,16 @@ var _createCipher = function(key, encrypt)
         temp = ((right >>> 8) ^ left) & 0x00ff00ff; left ^= temp; right ^= (temp << 8);
         temp = ((left >>> 1) ^ right) & 0x55555555; right ^= temp; left ^= (temp << 1);
 
-        left = ((left << 1) | (left >>> 31)); 
-        right = ((right << 1) | (right >>> 31)); 
+        left = ((left << 1) | (left >>> 31));
+        right = ((right << 1) | (right >>> 31));
 
-        for (var j = 0; j < iterations; j += 3) {
+        for(var j = 0; j < iterations; j += 3) {
           var endloop = looping[j+1];
           var loopinc = looping[j+2];
 
-          //now go through and perform the encryption or decryption  
-          for (var i = looping[j]; i != endloop; i += loopinc) {
-            var right1 = right ^ keys[i]; 
+          //now go through and perform the encryption or decryption
+          for(var i = looping[j]; i != endloop; i += loopinc) {
+            var right1 = right ^ keys[i];
             var right2 = ((right >>> 4) | (right << 28)) ^ keys[i+1];
 
             //the result is attained by passing these bytes through the S selection functions
@@ -269,8 +264,8 @@ var _createCipher = function(key, encrypt)
         }
 
         //move then each one bit to the right
-        left = ((left >>> 1) | (left << 31)); 
-        right = ((right >>> 1) | (right << 31)); 
+        left = ((left >>> 1) | (left << 31));
+        right = ((right >>> 1) | (right << 31));
 
         //now perform IP-1, which is IP in the opposite direction
         temp = ((left >>> 1) ^ right) & 0x55555555; right ^= temp; left ^= (temp << 1);
@@ -280,8 +275,8 @@ var _createCipher = function(key, encrypt)
         temp = ((left >>> 4) ^ right) & 0x0f0f0f0f; right ^= temp; left ^= (temp << 4);
 
         //for Cipher Block Chaining mode, xor the message with the previous result
-        if (mode == 1) {
-          if (encrypt) {
+        if(mode == 1) {
+          if(encrypt) {
             cbcleft = left;
             cbcright = right;
           } else {
@@ -351,9 +346,8 @@ var _createCipher = function(key, encrypt)
   return cipher;
 };
 
-
-
 /* DES API */
+forge.des = forge.des || {};
 
 /**
  * Creates a DES cipher object to encrypt data in ECB or CBC mode using the
@@ -431,66 +425,46 @@ forge.des.createDecryptionCipher = function(key)
   return _createCipher(key, false);
 };
 
+} // end module implementation
 
 /* ########## Begin module wrapper ########## */
-}
-var cjsDefine = null;
-if (typeof define !== 'function') {
-  // CommonJS -> AMD
-  if (typeof exports === 'object') {
-    cjsDefine = function(ids, factory) {
-      module.exports = factory.apply(null, ids.map(function(id) {
-        return require(id);
-      }));
-    }
-  } else
+var name = 'des';
+var deps = ['./util'];
+var nodeDefine = null;
+if(typeof define !== 'function') {
+  // NodeJS -> AMD
+  if(typeof module === 'object' && module.exports) {
+    nodeDefine = function(ids, factory) {
+      factory(require, module);
+    };
+  }
   // <script>
-  {
-    var forge = window.forge = window.forge || {};
-    forge[name] = forge[name] || {};
+  else {
+    forge = window.forge = window.forge || {};
     initModule(forge);
   }
 }
 // AMD
-if (cjsDefine || typeof define === 'function') {
-  var ids = [];
-  var assigns = [];
-  // Convert `deps` dependency declaration tree into AMD dependency list.
-  function forEachDep(path, deps) {
-    function assign(path) {
-      var index = ids.length;
-      ids.push(deps[path[path.length-1]]);
-      // Create helper function used after import below.
-      assigns.push(function(forge, args) {
-        var id;
-        while(path.length > 1) {
-          id = path.shift();
-          forge = forge[id] = forge[id] || {};
-        }
-        forge[path[0]] = args[index];
-      });
-    }
-    for (var alias in deps) {
-      if (typeof deps[alias] === 'string') {
-        assign(path.concat(alias));
-      } else {
-        forEachDep(path.concat(alias), deps[alias]);
+if(nodeDefine || typeof define === 'function') {
+  // define module AMD style
+  (nodeDefine || define)(['require', 'module'].concat(deps),
+  function(require, module) {
+    module.exports = function(forge) {
+      var mods = deps.map(function(dep) {
+        return require(dep);
+      }).concat(initModule);
+      // handle circular dependencies
+      forge = forge || {};
+      forge.defined = forge.defined || {};
+      if(forge.defined[name]) {
+        return forge[name];
       }
-    }
-    return forge;
-  }
-  forEachDep([], deps);
-  // Declare module AMD style.
-  (cjsDefine || define)(ids, function() {
-    var args = arguments;
-    var forge = {};
-    // Assemble AMD imported modules into `forge` dependency tree.
-    assigns.forEach(function(assign) {
-      assign(forge, args);
-    });
-    forge[name] = forge[name] || {};
-    initModule(forge);
-    return forge[name];
+      forge.defined[name] = true;
+      for(var i = 0; i < mods.length; ++i) {
+        mods[i](forge);
+      }
+      return forge[name];
+    };
   });
 }
 })();

@@ -6,18 +6,11 @@
  * Copyright (c) 2012 Stefan Siegl <stesie@brokenpipe.de>
  */
 (function() {
-var deps = {
-  util: './util'
-};
-var name = 'mgf1';
-function initModule(forge) {
 /* ########## Begin module implementation ########## */
-
-
-var mgf1 = forge.mgf1;
+function initModule(forge) {
 
 forge.mgf = forge.mgf || {};
-forge.mgf.mgf1 = mgf1;
+var mgf1 = forge.mgf.mgf1 = forge.mgf1 = forge.mgf1 || {};
 
 /**
  * Creates a MGF1 mask generation function object.
@@ -37,7 +30,7 @@ mgf1.create = function(md) {
       /* 2. Let T be the empty octet string. */
       var t = new forge.util.ByteBuffer();
 
-      /* 3. For counter from 0 to maskLen / hLen - 1, do the following: */
+      /* 3. For counter from 0 to ceil(maskLen / hLen), do the following: */
       var len = Math.ceil(maskLen / md.digestLength);
       for(var i = 0; i < len; i++) {
         /* a. Convert counter to an octet string C of length 4 octets */
@@ -60,66 +53,46 @@ mgf1.create = function(md) {
   return mgf;
 };
 
+} // end module implementation
 
 /* ########## Begin module wrapper ########## */
-}
-var cjsDefine = null;
-if (typeof define !== 'function') {
-  // CommonJS -> AMD
-  if (typeof exports === 'object') {
-    cjsDefine = function(ids, factory) {
-      module.exports = factory.apply(null, ids.map(function(id) {
-        return require(id);
-      }));
-    }
-  } else
+var name = 'mgf1';
+var deps = ['./util'];
+var nodeDefine = null;
+if(typeof define !== 'function') {
+  // NodeJS -> AMD
+  if(typeof module === 'object' && module.exports) {
+    nodeDefine = function(ids, factory) {
+      factory(require, module);
+    };
+  }
   // <script>
-  {
-    var forge = window.forge = window.forge || {};
-    forge[name] = forge[name] || {};
+  else {
+    forge = window.forge = window.forge || {};
     initModule(forge);
   }
 }
 // AMD
-if (cjsDefine || typeof define === 'function') {
-  var ids = [];
-  var assigns = [];
-  // Convert `deps` dependency declaration tree into AMD dependency list.
-  function forEachDep(path, deps) {
-    function assign(path) {
-      var index = ids.length;
-      ids.push(deps[path[path.length-1]]);
-      // Create helper function used after import below.
-      assigns.push(function(forge, args) {
-        var id;
-        while(path.length > 1) {
-          id = path.shift();
-          forge = forge[id] = forge[id] || {};
-        }
-        forge[path[0]] = args[index];
-      });
-    }
-    for (var alias in deps) {
-      if (typeof deps[alias] === 'string') {
-        assign(path.concat(alias));
-      } else {
-        forEachDep(path.concat(alias), deps[alias]);
+if(nodeDefine || typeof define === 'function') {
+  // define module AMD style
+  (nodeDefine || define)(['require', 'module'].concat(deps),
+  function(require, module) {
+    module.exports = function(forge) {
+      var mods = deps.map(function(dep) {
+        return require(dep);
+      }).concat(initModule);
+      // handle circular dependencies
+      forge = forge || {};
+      forge.defined = forge.defined || {};
+      if(forge.defined[name]) {
+        return forge[name];
       }
-    }
-    return forge;
-  }
-  forEachDep([], deps);
-  // Declare module AMD style.
-  (cjsDefine || define)(ids, function() {
-    var args = arguments;
-    var forge = {};
-    // Assemble AMD imported modules into `forge` dependency tree.
-    assigns.forEach(function(assign) {
-      assign(forge, args);
-    });
-    forge[name] = forge[name] || {};
-    initModule(forge);
-    return forge[name];
+      forge.defined[name] = true;
+      for(var i = 0; i < mods.length; ++i) {
+        mods[i](forge);
+      }
+      return forge[name];
+    };
   });
 }
 })();
