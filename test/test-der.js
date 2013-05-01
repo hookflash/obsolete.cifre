@@ -6,12 +6,15 @@ var fs = require('fs');
 var assert = require('assert');
 var BigInteger = require('../forge/jsbn');
 
+/*
 var pem = fs.readFileSync(__dirname + "/key.pem", "ascii");
 pem = pem.split("\n").slice(1, -2).join("");
 var der = new Buffer(pem, "base64");
 var data;
+*/
 
 describe("der", function () {
+/*
   it("Should decode an existing private key", function () {
     data = decode(der);
     assert(Array.isArray(data));
@@ -26,5 +29,5 @@ describe("der", function () {
     var base64 = encoded.toString('base64');
     assert.equal(base64, pem);
   });
-
+*/
 });
