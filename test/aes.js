@@ -33,7 +33,7 @@ describe("aes", function () {
       function decrypt(key, ivHex, cipherHex) {
         var state = UTILS.fromhex(cipherHex);
 
-        AES.cfb.encrypt(state, AES.keyExpansion(UTILS.fromhex(key)), UTILS.fromhex(ivHex));
+        AES.cfb.decrypt(state, AES.keyExpansion(UTILS.fromhex(key)), UTILS.fromhex(ivHex));
 
             console.log("\nEXPANDED KEY");
             UTILS.dump(AES.keyExpansion(UTILS.fromhex(key)));
