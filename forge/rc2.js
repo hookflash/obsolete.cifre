@@ -74,7 +74,7 @@ forge.rc2 = forge.rc2 || {};
  * @return the expanded RC2 key (ByteBuffer of 128 bytes)
  */
 forge.rc2.expandKey = function(key, effKeyBits) {
-  if(key.constructor == String) {
+  if(typeof key === 'string') {
     key = forge.util.createBuffer(key);
   }
   effKeyBits = effKeyBits || 128;
@@ -250,7 +250,7 @@ var createCipher = function(key, bits, encrypt)
     start: function(iv, output) {
       if(iv) {
         /* CBC mode */
-        if(key.constructor == String && iv.length == 8) {
+        if(typeof key === 'string' && iv.length === 8) {
           iv = forge.util.createBuffer(iv);
         }
       }
@@ -302,7 +302,7 @@ var createCipher = function(key, bits, encrypt)
         } else {
           // add PKCS#7 padding to block (each pad byte is the
           // value of the number of pad bytes)
-          var padding = (_input.length() == 8) ? 8 : (8 - _input.length());
+          var padding = (_input.length() === 8) ? 8 : (8 - _input.length());
           _input.fillWithByte(padding, padding);
         }
       }
@@ -431,31 +431,38 @@ if(typeof define !== 'function') {
   }
   // <script>
   else {
-    forge = window.forge = window.forge || {};
+    if(typeof forge === 'undefined') {
+      forge = {};
+    }
     initModule(forge);
   }
 }
 // AMD
-if(nodeDefine || typeof define === 'function') {
-  // define module AMD style
-  (nodeDefine || define)(['require', 'module'].concat(deps),
-  function(require, module) {
-    module.exports = function(forge) {
-      var mods = deps.map(function(dep) {
-        return require(dep);
-      }).concat(initModule);
-      // handle circular dependencies
-      forge = forge || {};
-      forge.defined = forge.defined || {};
-      if(forge.defined[name]) {
-        return forge[name];
-      }
-      forge.defined[name] = true;
-      for(var i = 0; i < mods.length; ++i) {
-        mods[i](forge);
-      }
+var defineDeps = ['require', 'module'].concat(deps);
+var defineFunc = function(require, module) {
+  module.exports = function(forge) {
+    var mods = deps.map(function(dep) {
+      return require(dep);
+    }).concat(initModule);
+    // handle circular dependencies
+    forge = forge || {};
+    forge.defined = forge.defined || {};
+    if(forge.defined[name]) {
       return forge[name];
-    };
+    }
+    forge.defined[name] = true;
+    for(var i = 0; i < mods.length; ++i) {
+      mods[i](forge);
+    }
+    return forge[name];
+  };
+};
+if(nodeDefine) {
+  nodeDefine(defineDeps, defineFunc);
+}
+else if(typeof define === 'function') {
+  define([].concat(defineDeps), function() {
+    defineFunc.apply(null, Array.prototype.slice.call(arguments, 0));
   });
 }
 })();

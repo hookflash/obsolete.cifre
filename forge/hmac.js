@@ -45,7 +45,7 @@ hmac.create = function() {
    */
   ctx.start = function(md, key) {
     if(md !== null) {
-      if(md.constructor == String) {
+      if(typeof md === 'string') {
         // create builtin message digest
         md = md.toLowerCase();
         if(md in forge.md.algorithms) {
@@ -67,11 +67,11 @@ hmac.create = function() {
     }
     else {
       // convert string into byte buffer
-      if(key.constructor == String) {
+      if(typeof key === 'string') {
         key = forge.util.createBuffer(key);
       }
       // convert byte array into byte buffer
-      else if(key.constructor == Array) {
+      else if(forge.util.isArray(key)) {
         var tmp = key;
         key = forge.util.createBuffer();
         for(var i = 0; i < tmp.length; ++i) {
@@ -164,31 +164,38 @@ if(typeof define !== 'function') {
   }
   // <script>
   else {
-    forge = window.forge = window.forge || {};
+    if(typeof forge === 'undefined') {
+      forge = {};
+    }
     initModule(forge);
   }
 }
 // AMD
-if(nodeDefine || typeof define === 'function') {
-  // define module AMD style
-  (nodeDefine || define)(['require', 'module'].concat(deps),
-  function(require, module) {
-    module.exports = function(forge) {
-      var mods = deps.map(function(dep) {
-        return require(dep);
-      }).concat(initModule);
-      // handle circular dependencies
-      forge = forge || {};
-      forge.defined = forge.defined || {};
-      if(forge.defined[name]) {
-        return forge[name];
-      }
-      forge.defined[name] = true;
-      for(var i = 0; i < mods.length; ++i) {
-        mods[i](forge);
-      }
+var defineDeps = ['require', 'module'].concat(deps);
+var defineFunc = function(require, module) {
+  module.exports = function(forge) {
+    var mods = deps.map(function(dep) {
+      return require(dep);
+    }).concat(initModule);
+    // handle circular dependencies
+    forge = forge || {};
+    forge.defined = forge.defined || {};
+    if(forge.defined[name]) {
       return forge[name];
-    };
+    }
+    forge.defined[name] = true;
+    for(var i = 0; i < mods.length; ++i) {
+      mods[i](forge);
+    }
+    return forge[name];
+  };
+};
+if(nodeDefine) {
+  nodeDefine(defineDeps, defineFunc);
+}
+else if(typeof define === 'function') {
+  define([].concat(defineDeps), function() {
+    defineFunc.apply(null, Array.prototype.slice.call(arguments, 0));
   });
 }
 })();

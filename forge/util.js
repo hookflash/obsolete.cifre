@@ -12,6 +12,36 @@ function initModule(forge) {
 /* Utilities API */
 var util = forge.util = forge.util || {};
 
+// define setImmediate and nextTick
+if(typeof process === 'undefined' || !process.nextTick) {
+  if(typeof setImmediate === 'function') {
+    util.setImmediate = setImmediate;
+    util.nextTick = function(callback) {
+      return setImmediate(callback);
+    };
+  }
+  else {
+    util.setImmediate = function(callback) {
+      setTimeout(callback, 0);
+    };
+    util.nextTick = util.setImmediate;
+  }
+}
+else {
+  util.nextTick = process.nextTick;
+  if(typeof setImmediate === 'function') {
+    util.setImmediate = setImmediate;
+  }
+  else {
+    util.setImmediate = util.nextTick;
+  }
+}
+
+// define isArray
+util.isArray = Array.isArray || function(x) {
+  return Object.prototype.toString.call(x) === '[object Array]';
+};
+
 /**
  * Constructor for a byte buffer.
  *
@@ -295,7 +325,7 @@ util.ByteBuffer.prototype.getInt32Le = function() {
 util.ByteBuffer.prototype.getInt = function(n) {
   var rval = 0;
   do {
-    rval = (rval << n) + this.data.charCodeAt(this.read++);
+    rval = (rval << 8) + this.data.charCodeAt(this.read++);
     n -= 8;
   }
   while(n > 0);
@@ -305,7 +335,7 @@ util.ByteBuffer.prototype.getInt = function(n) {
 /**
  * Reads bytes out into a UTF-8 string and clears them from the buffer.
  *
- * @param count the number of bytes to read, undefined, null or 0 for all.
+ * @param count the number of bytes to read, undefined or null for all.
  *
  * @return a UTF-8 string of bytes.
  */
@@ -1127,7 +1157,8 @@ util.getQueryVariables = function(query) {
       if(!(key in rval)) {
         rval[key] = [];
       }
-      if(val !== null) {
+      // disallow overriding object prototype keys
+      if(!(key in Object.prototype) && val !== null) {
         rval[key].push(unescape(val));
       }
     }
@@ -1180,11 +1211,11 @@ util.parseFragment = function(fragment) {
   }
   // split path based on '/' and ignore first element if empty
   var path = fp.split('/');
-  if(path.length > 0 && path[0] == '') {
+  if(path.length > 0 && path[0] === '') {
     path.shift();
   }
   // convert query into object
-  var query = (fq == '') ? {} : util.getQueryVariables(fq);
+  var query = (fq === '') ? {} : util.getQueryVariables(fq);
 
   return {
     pathString: fp,
@@ -1521,31 +1552,38 @@ if(typeof define !== 'function') {
   }
   // <script>
   else {
-    forge = window.forge = window.forge || {};
+    if(typeof forge === 'undefined') {
+      forge = {};
+    }
     initModule(forge);
   }
 }
 // AMD
-if(nodeDefine || typeof define === 'function') {
-  // define module AMD style
-  (nodeDefine || define)(['require', 'module'].concat(deps),
-  function(require, module) {
-    module.exports = function(forge) {
-      var mods = deps.map(function(dep) {
-        return require(dep);
-      }).concat(initModule);
-      // handle circular dependencies
-      forge = forge || {};
-      forge.defined = forge.defined || {};
-      if(forge.defined[name]) {
-        return forge[name];
-      }
-      forge.defined[name] = true;
-      for(var i = 0; i < mods.length; ++i) {
-        mods[i](forge);
-      }
+var defineDeps = ['require', 'module'].concat(deps);
+var defineFunc = function(require, module) {
+  module.exports = function(forge) {
+    var mods = deps.map(function(dep) {
+      return require(dep);
+    }).concat(initModule);
+    // handle circular dependencies
+    forge = forge || {};
+    forge.defined = forge.defined || {};
+    if(forge.defined[name]) {
       return forge[name];
-    };
+    }
+    forge.defined[name] = true;
+    for(var i = 0; i < mods.length; ++i) {
+      mods[i](forge);
+    }
+    return forge[name];
+  };
+};
+if(nodeDefine) {
+  nodeDefine(defineDeps, defineFunc);
+}
+else if(typeof define === 'function') {
+  define([].concat(defineDeps), function() {
+    defineFunc.apply(null, Array.prototype.slice.call(arguments, 0));
   });
 }
 })();

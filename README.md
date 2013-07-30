@@ -26,9 +26,9 @@ A major cleanup and refactor is planned once collaboration with `forge` progress
 Import from [forge](https://github.com/digitalbazaar/forge):
 
 	git clone git@github.com:digitalbazaar/forge.git ~/forge
-	cp -f ~forge/js/*.js ./forge
+	cp -f ~/forge/js/*.js ./forge
 	cd ./forge
-	rm debug.js forge.js form.js http.js log.js pkcs7.js socket.js task.js tls.js tlssocket.js xhr.js 
+	rm debug.js forge.js form.js http.js log.js pkcs7.js socket.js task.js tls.js tlssocket.js xhr.js prime.worker.js
 
 
 License
