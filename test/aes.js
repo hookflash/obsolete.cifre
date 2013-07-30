@@ -65,5 +65,12 @@ console.log("encrypted", encrypt(key, iv, data));
 console.log("decrypted", decrypt(key, iv, encrypt(key, iv, data)));
 
       ASSERT.equal(decrypt(key, iv, encrypt(key, iv, data)), data);
+
+      data = decrypt.toString();
+
+console.log("encrypted", encrypt(key, iv, data));
+console.log("decrypted", decrypt(key, iv, encrypt(key, iv, data)));
+
+      ASSERT.equal(decrypt(key, iv, encrypt(key, iv, data)), data);
   });
 });
