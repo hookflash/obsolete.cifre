@@ -1,6 +1,6 @@
 {
     "name": "cifre",
-    "version": "0.0.7",
+    "version": "0.0.8",
     "pm": "npm",
     "publish": true,
     "description": "Fast crypto toolkit for modern client-side JavaScript",
