@@ -202,9 +202,9 @@ describe("aes", function () {
             console.log("\nEXPANDED KEY");
             utils.dump(key);
             console.log("IV", ivHex);
-            utils.dump(iv);
+            utils.dump(utils.fromhex(ivHex));
             console.log("GIVEN PLAIN TEXT");
-            utils.dump(state);
+            utils.dump(utils.fromhex(plainHex));
             console.log("CALCULATED ENCRYPTED TEXT");
             utils.dump(state);
             console.log("EXPECTED ENCRYPTED TEXT");
@@ -222,9 +222,9 @@ describe("aes", function () {
             console.log("\nEXPANDED KEY");
             utils.dump(key);
             console.log("IV");
-            utils.dump(iv);
+            utils.dump(utils.fromhex(ivHex));
             console.log("GIVEN ENCRYPTED TEXT");
-            utils.dump(state);
+            utils.dump(utils.fromhex(cipherHex));
             console.log("CALCULATED PLAIN TEXT");
             utils.dump(state);
             console.log("Expected PLAIN TEXT");
