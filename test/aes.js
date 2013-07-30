@@ -9,22 +9,6 @@ describe("aes", function () {
 
   it("encrypt decrypt", function () {
 
-      function arrayToHex(array) {      
-        return FORGE_UTIL.bytesToHex(array.map(function(code) {
-          return String.fromCharCode(code);
-        }).join(''));
-      }
-
-      function hexToArray(base64) {
-          var data = FORGE_UTIL.hexToBytes(base64);
-          var length = data.length;
-          var state = new Array(length);
-          for (var i = 0; i < length; i++) {
-            state[i] = data.charCodeAt(i);
-          }
-          return state;
-      }
-
       function sha256(data) {
         var md = SHA256.create();
         md.start();
@@ -32,45 +16,73 @@ describe("aes", function () {
         return md.digest().toHex();
       }
 
-      function encrypt(key, iv, data) {
-        var length = data.length;
-        var state = new Array(length);
-        for (var i = 0; i < length; i++) {
-          state[i] = data.charCodeAt(i);
-        }
-        AES.cfb.encrypt(state, AES.keyExpansion(UTILS.fromhex(key)), UTILS.fromhex(iv));
-        return arrayToHex(state);
+      function encrypt(key, ivHex, plainText) {
+        var state = UTILS.stringToArray(plainText);
+        AES.cfb.encrypt(state, AES.keyExpansion(UTILS.fromhex(key)), UTILS.fromhex(ivHex));
+            console.log("\nEXPANDED KEY");
+            UTILS.dump(AES.keyExpansion(UTILS.fromhex(key)));
+            console.log("IV");
+            UTILS.dump(UTILS.fromhex(ivHex));
+            console.log("GIVEN PLAIN TEXT");
+            UTILS.dump(UTILS.stringToArray(plainText));
+            console.log("CALCULATED ENCRYPTED TEXT");
+            UTILS.dump(state);
+        return UTILS.tohex(state);
       }
 
-      function decrypt(key, iv, data) {
-        var state = hexToArray(data);
-        AES.cfb.encrypt(state, AES.keyExpansion(UTILS.fromhex(key)), UTILS.fromhex(iv));
-        return state.map(function(code) {
-            return String.fromCharCode(code);
-        }).join('');
+      function decrypt(key, ivHex, cipherHex) {
+        var state = UTILS.fromhex(cipherHex);
+
+        AES.cfb.encrypt(state, AES.keyExpansion(UTILS.fromhex(key)), UTILS.fromhex(ivHex));
+
+            console.log("\nEXPANDED KEY");
+            UTILS.dump(AES.keyExpansion(UTILS.fromhex(key)));
+            console.log("IV");
+            UTILS.dump(UTILS.fromhex(ivHex));
+            console.log("GIVEN ENCRYPTED TEXT");
+            UTILS.dump(UTILS.fromhex(cipherHex));
+            console.log("CALCULATED PLAIN TEXT");
+            UTILS.dump(state);
+        return arrayToAscii(state);
       }
 
       var key = sha256("k9kgd9s87w6u8sjkksd84823kdnvbxez");
-      var iv = "97ffb2cc1fcdc8d5daa4a12f107d894e";
+      var ivHex = "97ffb2cc1fcdc8d5daa4a12f107d894e";
       var data = '{"service":""}';
 
-console.log("encrypted", encrypt(key, iv, data));
-console.log("decrypted", decrypt(key, iv, encrypt(key, iv, data)));
-
-      ASSERT.equal(decrypt(key, iv, encrypt(key, iv, data)), data);
+console.log("input", data);
+      var encrypted = encrypt(key, ivHex, data);
+console.log("encrypted", encrypted);
+      var decrypted = decrypt(key, ivHex, encrypted);
+console.log("decrypted", decrypted);
+      ASSERT.equal(data, decrypted, data);
 
       data = '{"service":"github"}';
 
-console.log("encrypted", encrypt(key, iv, data));
-console.log("decrypted", decrypt(key, iv, encrypt(key, iv, data)));
-
-      ASSERT.equal(decrypt(key, iv, encrypt(key, iv, data)), data);
+console.log("input", data);
+      var encrypted = encrypt(key, ivHex, data);
+console.log("encrypted", encrypted);
+      var decrypted = decrypt(key, ivHex, encrypted);
+console.log("decrypted", decrypted);
+      ASSERT.equal(data, decrypted, data);
 
       data = decrypt.toString();
 
-console.log("encrypted", encrypt(key, iv, data));
-console.log("decrypted", decrypt(key, iv, encrypt(key, iv, data)));
+console.log("input", data);
+      var encrypted = encrypt(key, ivHex, data);
+console.log("encrypted", encrypted);
+      var decrypted = decrypt(key, ivHex, encrypted);
+console.log("decrypted", decrypted);
+      ASSERT.equal(data, decrypted, data);
 
-      ASSERT.equal(decrypt(key, iv, encrypt(key, iv, data)), data);
   });
 });
+
+function arrayToAscii(array) {
+  var string = "";
+  for (var i = 0, l = array.length; i < l; i++) {
+    string += String.fromCharCode(array[i]);
+  }
+  return string;
+}
+
